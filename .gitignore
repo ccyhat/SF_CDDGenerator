@@ -1,7 +1,10 @@
 # 用**匹配任意层级，确保无论Test在哪个目录都被忽略
-**/Test/
+/Test/
 # 2. 忽略obj文件夹（同样匹配任意层级）
-**/obj/
+Helper/obj/
+MainWindow/obj/
+Processor/obj/
+SFTemplateGenerator/obj/
 # 先忽略所有文件
 *
 

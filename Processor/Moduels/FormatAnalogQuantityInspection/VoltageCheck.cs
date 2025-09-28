@@ -14,7 +14,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
     public class VoltageCheck : IVoltageCheck
     {
         private readonly ITargetDeviceKeeper _targetDeviceKeeper;
-        private readonly ISDLKeeper _sdlKeeper;
+        private readonly ISDLKeeper _sDLKeeper;
         private readonly IDeviceModelKeeper _deviceModelKeeper;
 
 
@@ -48,7 +48,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             )
         {
             _targetDeviceKeeper = targetDeviceKeeper;
-            _sdlKeeper = sdlKeeper;
+            _sDLKeeper = sdlKeeper;
             _deviceModelKeeper = deviceModelKeeper;
             _switchTest = switchTest;
             _switchTest_DsAnAin = switchTest_DsAnAin;
@@ -60,7 +60,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             //获取交流插件
             var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => ACBORAD_REGEX.IsMatch(B.Desc)).ToList();
 
-            Dictionary<string, CoreInfo> dictionary = new Dictionary<string, CoreInfo>();
+            Dictionary<string, ACDeviceUint> dictionary = new Dictionary<string, ACDeviceUint>();
             //循环添加
             for (int i = 0; i < boards.Count(); i++)
             {
@@ -113,11 +113,11 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             return Task.CompletedTask;
         }
-        private Dictionary<string, CoreInfo> GetInfo(SDL sdl, Device target, Board board)
+        private Dictionary<string, ACDeviceUint> GetInfo(SDL sdl, Device target, Board board)
         {
             // 预先缓存 Ports，避免多次遍历
             var ports = board.Ports;
-            var dictionary = new Dictionary<string, CoreInfo>();
+            var dictionary = new Dictionary<string, ACDeviceUint>();
             var groupedByTail = new Dictionary<string, List<Port>>();
             foreach (var p in ports)
             {
@@ -170,7 +170,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     }
                     else if (REGEX_I0.IsMatch(p.Desc)) i_0_ports.Add(p);
                 }
-                var info = new CoreInfo();
+                var info = new ACDeviceUint();
                 void AddCores(IEnumerable<Port> portList, List<List<Core>> infoList, List<string> KK_BYQ)
                 {
                     foreach (var port in portList)
@@ -369,7 +369,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             return false;
         }
-        private void AlternatingCurrentLine(Items root, CoreInfo info, SDL sdl, int loopcount)
+        private void AlternatingCurrentLine(Items root, ACDeviceUint info, SDL sdl, int loopcount)
         {
             var safety = root.GetSafetys().FirstOrDefault(S => S.Name.StartsWith("接入交流线"));
             if (safety != null)
@@ -489,7 +489,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         }
         private Tuple<string, string> GetEND(List<Core> cores)
         {
-            var Devices = _sdlKeeper.SDL.Cubicle.Devices.ToList();
+            var Devices = _sDLKeeper.SDL.Cubicle.Devices.ToList();
             string DeviceName = "";
             string BoardName = "";
             if (cores.Count() == 1)
@@ -548,6 +548,114 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             var datset = ldevice.Datasets.FirstOrDefault(D => D.Name == "测量量");
             return datset != null && datset.Datas.Count > 0;
+        }
+        private void GetAllLines(SDL sdl, Device target, Board board, Port port, List<Core> line, List<List<Core>> totalLines)
+        {
+            GetAllLines(sdl, target.Name, board.Name, port.Name, line, totalLines);
+        }
+        private void GetAllLines(SDL sdl, string deviceName,
+        string boardName,
+        string portName,
+        List<Core> currentLine,
+        List<List<Core>> lines)
+        {
+            var totalCores = sdl.Cubicle.Cores.ToList();
+            var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == deviceName)!;
+            List<Core> nextCores = null!;
+
+            if (device.Class.Equals("TD"))
+            {
+                nextCores = totalCores.Except(currentLine).Where(c =>
+               ((c.DeviceA == deviceName && c.BoardA == boardName) ||
+               (c.DeviceB == deviceName && c.BoardB == boardName)) &&
+               !(c.DeviceA == c.DeviceB && c.BoardA == c.BoardB)).ToList();//排除自己连接自己的短连片
+            }
+            else
+            {
+                nextCores = totalCores.Except(currentLine).Where(c =>
+                (c.DeviceA == deviceName && c.BoardA == boardName && c.PortA == portName) ||
+                (c.DeviceB == deviceName && c.BoardB == boardName && c.PortB == portName)).ToList();
+            }
+            if (nextCores.Count == 0 || device.Class.Equals("IED"))
+            {
+                if (currentLine.Count > 0)
+                {
+                    lines.Add(new List<Core>(currentLine));
+                    return;
+                }
+            }
+            foreach (var core in nextCores)
+            {
+                List<Core> newLine = new List<Core>(currentLine);
+                newLine.Add(core);
+                Tuple<string, string, string> anotherPort = GetAnotherPort(sdl, core, deviceName, boardName, portName);
+                GetAllLines(sdl, anotherPort.Item1, anotherPort.Item2, anotherPort.Item3, newLine, lines);
+            }
+        }
+        private Tuple<string, string, string> GetAnotherPort(SDL sdl, Core core, string deviceName, string boardName, string portName)
+        {
+            string AnotherDevice = "";
+            string AnotherBoard = "";
+            string AnotherPort = "";
+            if (core.DeviceA == deviceName && core.BoardA == boardName)
+            {
+                AnotherDevice = core.DeviceB;
+                AnotherBoard = core.BoardB;
+                AnotherPort = core.PortB;
+            }
+            else
+            {
+                AnotherDevice = core.DeviceA;
+                AnotherBoard = core.BoardA;
+                AnotherPort = core.PortA;
+            }
+            var cores = sdl.Cubicle.Cores.ToList();
+            //检查下一个是不是短连片
+            var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == AnotherDevice)!;
+            if (device.Class.Equals("KK"))
+            {
+                if (int.TryParse(AnotherPort, out int portANumber))
+                {
+                    
+                    AnotherPort = (portANumber - 1).ToString();
+                }
+            }
+            else if (device.Class.Equals("PT"))
+            {            
+                AnotherPort = AnotherPort.ToUpper();
+            }
+            else if (device.Class.Equals("IED"))
+            {
+                if (int.TryParse(AnotherPort, out int portANumber))
+                {
+                    AnotherPort = (portANumber + 1).ToString();
+                }
+            }
+            Tuple<string, string, string> tuple = new Tuple<string, string, string>(AnotherDevice, AnotherBoard, AnotherPort);
+            return tuple;
+        }
+        private List<Core> GetTargetLine(List<List<Core>> lines)
+        {
+            foreach (var line in lines)
+            {
+                foreach (var core in line)
+                {
+                    var deviceA = _sDLKeeper.SDL.Cubicle.Devices.FirstOrDefault(d => d.Name == core.DeviceA);
+                    var deviceB = _sDLKeeper.SDL.Cubicle.Devices.FirstOrDefault(d => d.Name == core.DeviceB);
+                    if (deviceA != null && deviceB != null)
+                    {
+                        if (deviceA.Class.Equals("YB") || deviceB.Class.Equals("YB"))
+                        {
+                            return line;
+                        }
+                    }
+                }
+            }
+            if (lines.FirstOrDefault() != null)
+            {
+                return lines.FirstOrDefault().ToList();
+            }
+            return null;
         }
     }
 }

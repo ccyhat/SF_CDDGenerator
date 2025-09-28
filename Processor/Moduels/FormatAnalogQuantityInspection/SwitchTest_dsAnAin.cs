@@ -30,7 +30,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             _targetDeviceKeeper = targetDeviceKeeper;
         }
 
-        public Task SwitchTest_dsAnAinProcess(SDL sdl, Items root, KeyValuePair<string, CoreInfo> info, TESTER tester)
+        public Task SwitchTest_dsAnAinProcess(SDL sdl, Items root, KeyValuePair<string, ACDeviceUint> info, TESTER tester)
         {
             newitems.Clear();
             if (tester == TESTER.PONOVOTester || tester == TESTER.PONOVOStandardSource)
@@ -48,7 +48,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 
             return Task.CompletedTask;
         }
-        private void ONLLYSwitchTest_dsAnAinProcess(SDL sdl, Items root, KeyValuePair<string, CoreInfo> info)
+        private void ONLLYSwitchTest_dsAnAinProcess(SDL sdl, Items root, KeyValuePair<string, ACDeviceUint> info)
         {
             var target = root.GetItems().Where(MT => MT.Name.Equals("开关测试")).FirstOrDefault();
             var output = target.GetSafetys().FirstOrDefault(I => I.Name.Contains("加量")).Clone();
@@ -93,7 +93,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             stop.OrderNum = 99;
             newitems.Add(stop);
         }
-        private void PONOVOSwitchTest_dsAnAinProcess(SDL sdl, Items root, KeyValuePair<string, CoreInfo> info)
+        private void PONOVOSwitchTest_dsAnAinProcess(SDL sdl, Items root, KeyValuePair<string, ACDeviceUint> info)
         {
             var target = root.GetMacroTests().Where(MT => MT.Name.Equals("开关测试")).FirstOrDefault();
             InitSafe_Command(target, info);
@@ -128,7 +128,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 }
             }
         }
-        private void InitSafe_Command(MacroTest target, KeyValuePair<string, CoreInfo> info)
+        private void InitSafe_Command(MacroTest target, KeyValuePair<string, ACDeviceUint> info)
         {
             int cpu_count = _deviceModelKeeper.TargetDeviceModel.LDevices.Count(LD => LD.Name.StartsWith("CPU"));
             if (cpu_count == 1)
@@ -177,7 +177,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             target.Safety_CommCMD_List = newitems.ToList();
         }
-        private IS_CONTINUE NoKK(MacroTest target, KeyValuePair<string, CoreInfo> info)
+        private IS_CONTINUE NoKK(MacroTest target, KeyValuePair<string, ACDeviceUint> info)
         {
             var commands = target.GetCommCMDs();
             foreach (var command in commands)
@@ -266,7 +266,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 return IS_CONTINUE.Continue;
             }
         }
-        private IS_CONTINUE ONEKK(MacroTest target, KeyValuePair<string, CoreInfo> info)
+        private IS_CONTINUE ONEKK(MacroTest target, KeyValuePair<string, ACDeviceUint> info)
         {
             var commCmds = target.GetCommCMDs();
             var commCmdsDeepCopy = commCmds.Select(cmd => cmd.Clone()).ToList();
@@ -276,10 +276,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 int count = 0;
                 StringBuilder sb = new StringBuilder();
                 {
-
                     sb.AppendLine();
-
-
                     if (info.Value.KK_BYQ_List1.Where(L => L.Contains("BYQ")).Count() != 0)
                     {
                         sb.Append("vPsum = vPsum/3.8;");
@@ -287,8 +284,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 
                     sb.AppendLine();
                     if (info.Value.Group1 != null && info.Value.Group1.Count > 0)
-                    {
-                      
+                    {                     
                         for (int i = 0; i < Math.Min(3, info.Value.Group1.Count); i ++)              
                         {
                             var item = info.Value.Group1[i];
@@ -319,12 +315,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
                             if (info.Value.KK_BYQ_List1.Any(L => L.Contains("KK")) ^ info.Value.KK_BYQ_List2.Any(L => L.Contains("KK")))//异或关系
                             {
-
                                 sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {U_param[0]}, -1, vg_MRUErrorRel); ");
                                 sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[0]}, vg_MRUAngErrorAbs, -1);");
-
                                 count += 2;
-
                             }
 
                         }
@@ -340,8 +333,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             var source = GetBoardPort(item);
                             var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[i]}, -1, vg_MRIErrorRel); ");
-                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[i]}, vg_MRIAngErrorAbs, -1); ");
-              
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[i]}, vg_MRIAngErrorAbs, -1); ");             
                             count += 2;
                         }
                     }
@@ -353,7 +345,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, -1, vg_MRIErrorRel); ");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[0]}, vg_MRIAngErrorAbs, -1); ");
-
                             count += 2;
                         }
                     }
@@ -376,7 +367,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 return IS_CONTINUE.Continue;
             }
         }
-        private IS_CONTINUE TWOKK(MacroTest target, KeyValuePair<string, CoreInfo> info)
+        private IS_CONTINUE TWOKK(MacroTest target, KeyValuePair<string, ACDeviceUint> info)
         {
             var commCmds = target.GetCommCMDs();
             var commCmdsDeepCopy = commCmds.Select(cmd => cmd.Clone()).ToList();
@@ -386,7 +377,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 int count = 0;
                 StringBuilder sb = new StringBuilder();
                 {
-
                     if (info.Value.Group2 != null && info.Value.Group2.Count > 0)
                     {
                         foreach (var item in info.Value.Group2.GetRange(0, 1))
@@ -438,7 +428,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             target.Safety_CommCMD_List.AddRange(commCmdsDeepCopy);
             return IS_CONTINUE.Stop;
         }
-        private void InitSafe_Command(Items target, KeyValuePair<string, CoreInfo> info)
+        private void InitSafe_Command(Items target, KeyValuePair<string, ACDeviceUint> info)
         {
             int cpu_count = _deviceModelKeeper.TargetDeviceModel.LDevices.Count(LD => LD.Name.StartsWith("CPU"));
             if (cpu_count == 1)
@@ -487,7 +477,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             target.ItemList = newitems.ToList();
         }
-        private IS_CONTINUE NoKK(Items target, KeyValuePair<string, CoreInfo> info)
+        private IS_CONTINUE NoKK(Items target, KeyValuePair<string, ACDeviceUint> info)
         {
             var commands = target.GetCommCMDs();
             foreach (var command in commands)
@@ -540,14 +530,12 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                                 sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", 0, vg_U1VErrorAbs, -1); ");
                                 count++;
                             }
-
                         }
                     }
                     if (info.Value.Group1 != null && info.Value.Group1.Count == 0)//如果没有电压通道，电流测试需要前置
                     {
                         if (info.Value.Group3 != null && info.Value.Group3.Count > 0)
-                        {
-                          
+                        {                          
                             for (int i = 0; i < Math.Min(3, info.Value.Group1.Count); i++)
                             {
                                 var item = info.Value.Group1[i];
@@ -574,7 +562,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 return IS_CONTINUE.Continue;
             }
         }
-        private IS_CONTINUE ONEKK(Items target, KeyValuePair<string, CoreInfo> info)
+        private IS_CONTINUE ONEKK(Items target, KeyValuePair<string, ACDeviceUint> info)
         {
             var commCmds = target.GetCommCMDs();
             var commCmdsDeepCopy = commCmds.Select(cmd => cmd.Clone()).ToList();
@@ -584,10 +572,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 int count = 0;
                 StringBuilder sb = new StringBuilder();
                 {
-
                     sb.AppendLine();
-
-
                     if (info.Value.KK_BYQ_List1.Where(L => L.Contains("BYQ")).Count() != 0)
                     {
                         sb.Append("vPsum = vPsum/3.8;");
@@ -639,8 +624,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     sb.AppendLine("ShowMsg(strshow);");
                     sb.AppendLine();
                     if (info.Value.Group3 != null && info.Value.Group3.Count > 0)
-                    {
-                        
+                    {                       
                        for (int i = 0; i < Math.Min(3, info.Value.Group3.Count); i++)
                        {
                             var item = info.Value.Group3[i];
@@ -682,7 +666,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 return IS_CONTINUE.Continue;
             }
         }
-        private IS_CONTINUE TWOKK(Items target, KeyValuePair<string, CoreInfo> info)
+        private IS_CONTINUE TWOKK(Items target, KeyValuePair<string, ACDeviceUint> info)
         {
             var commCmds = target.GetCommCMDs();
             var commCmdsDeepCopy = commCmds.Select(cmd => cmd.Clone()).ToList();
@@ -692,7 +676,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 int count = 0;
                 StringBuilder sb = new StringBuilder();
                 {
-
                     if (info.Value.Group2 != null && info.Value.Group2.Count > 0)
                     {
                         foreach (var item in info.Value.Group2.GetRange(0, 1))

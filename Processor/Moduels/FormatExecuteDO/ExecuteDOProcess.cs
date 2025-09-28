@@ -94,9 +94,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         private void SeperateDOObject(List<DODeviceEnd> doDeviceEnds, Items rootItem)
         {
             foreach (var dODeviceEnd in doDeviceEnds)
-            {
-               
-
+            {               
                 if (REGEX_DOOthers.Any(R => R.IsMatch(dODeviceEnd.StartPort.Item3.Desc)))
                 {
                     Create_DO_By_Des(doDeviceEnds, rootItem);
