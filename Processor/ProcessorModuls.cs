@@ -122,8 +122,8 @@ namespace SFTemplateGenerator.Processor
                 .As<ISwitchTest>()
                 .InstancePerDependency();
             builder.RegisterType<VoltageCheck>()
-                .As<IVoltageCheck>()
-                .InstancePerDependency();
+              .As<IVoltageCheck>()
+              .InstancePerDependency();
             builder.RegisterType<UpdateRatedValue>()
                 .As<IUpdateRatedValue>()
                 .InstancePerDependency();

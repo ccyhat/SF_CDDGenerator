@@ -3,6 +3,7 @@ using SFTemplateGenerator.Helper.Shares.GuideBook;
 using SFTemplateGenerator.Helper.Shares.SDL;
 using SFTemplateGenerator.Processor.Interfaces;
 using SFTemplateGenerator.Processor.Interfaces.FormatAnalogQuantityInspection;
+using System.DirectoryServices.ActiveDirectory;
 using System.Text;
 using System.Text.RegularExpressions;
 using static SFTemplateGenerator.Helper.Constants.CDDRegex;
@@ -11,13 +12,11 @@ using static SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspectio
 
 namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 {
-    public class VoltageCheck : IVoltageCheck
+    public class VoltageCheckV2 : IVoltageCheck
     {
         private readonly ITargetDeviceKeeper _targetDeviceKeeper;
         private readonly ISDLKeeper _sDLKeeper;
         private readonly IDeviceModelKeeper _deviceModelKeeper;
-
-
         private readonly ISwitchTest _switchTest;
         private readonly IZeroSequenceVoltageCurrentTest _zeroSequenceVoltageCurrentTest;
         private readonly ISwitchTest_dsAnAin _switchTest_DsAnAin;
@@ -31,6 +30,22 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private static readonly Regex REGEX_In = new Regex(@"^(I)([nN])(\d{0,2})$", RegexOptions.IgnoreCase);
         private static readonly Regex REGEX_Iabc_hat = new Regex(@"^(I)([cC])(\d{0,2})[\`\']$", RegexOptions.IgnoreCase);//
         private static readonly Regex REGEX_I0 = new Regex(@"^(3I|I)([0xX])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase);//
+
+        private static readonly List<Regex> Regex_END = new List<Regex>()
+        {
+            new Regex(@"Ua\d?'"),
+            new Regex(@"Ub\d?'"),
+            new Regex(@"Ia\d?'"),
+            new Regex(@"Ib\d?'"),
+
+        };
+        private static readonly List<Regex> Regex_MID = new List<Regex>()
+        {
+            new Regex(@"u1'"),
+            new Regex(@"u2'"),
+            new Regex(@"U1'"),
+            new Regex(@"U2'"),
+        };
         //guidebook正则表达式
         private static readonly Dictionary<TESTER, Regex> REGEX_TEMPLATE = new Dictionary<TESTER, Regex>() {
             {TESTER.PONOVOTester,new Regex(@"^电压检查（第一组）（博电）$")},
@@ -38,7 +53,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             {TESTER.ONLLYTester,new Regex(@"^电压检查（第一组）（昂立）$")},
 
         };
-        public VoltageCheck(
+        public VoltageCheckV2(
             ITargetDeviceKeeper targetDeviceKeeper,
             ISDLKeeper sdlKeeper,
             IDeviceModelKeeper deviceModelKeeper,
@@ -174,26 +189,19 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 {
                     foreach (var port in portList)
                     {
-#if DEBUG
-                        if(port.Desc== "Ic2'")
-                        {
-                            int a = 0;
-                            
-                        }
-#endif
                         var KK_BYQ_list = new List<string>();
-                        var cores = new List<Core>();
-                        GetFarCore(sdl, target, board, port, new List<Core>(), KK_BYQ_list, cores);
-                        if (cores.Count > 0)
+                        var lines = new List<List<Core>>();
+                        GetAllLines(sdl, target, board, port, new List<Core>(), lines);
+                        var cores = GetTargetLine(lines);
+                        if (cores != null && cores.Count > 0)
                         {
                             infoList.Add(cores);
+                            var KK = GetKKCount(cores);
+                            var BYQ = GetBYQCount(cores);
+                            KK_BYQ.AddRange(KK);
+                            KK_BYQ.AddRange(BYQ);
                         }
-                        KK_BYQ.AddRange(KK_BYQ_list);
                     }
-                    // 直接对原List去重
-                    var distinct = KK_BYQ.Distinct().ToList();
-                    KK_BYQ.Clear();
-                    KK_BYQ.AddRange(distinct);
                 }
                 AddCores(u_ports, info.Group1, info.KK_BYQ_List1);
                 AddCores(u_n_ports, info.Group1, info.KK_BYQ_List1);
@@ -209,93 +217,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             return dictionary;
         }
-        private void GetFarCore(SDL sdl, Device target, Board board, Port port, List<Core> fliter, List<string> KK_BYQ_list, List<Core> Core_list)
-        {
-            GetFarCore(sdl, target.Name, board.Name, port.Name, fliter, KK_BYQ_list, Core_list);
-            if (Core_list.Count() == 0 && fliter.Count() > 0)
-            {
-                Core_list.Add(fliter.FirstOrDefault());
-            }
-        }
-        private bool GetFarCore(SDL sdl, string deviceName,
-        string boardName,
-        string portName,
-        List<Core> fliter,
-        List<string> KK_BYQ_list,
-        List<Core> Core_list)
-        {
-            var Total_cores = sdl.Cubicle.Cores.ToList();
-            var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == deviceName)!;
-            List<Core> cores = null!;
-            if (device.Class.Equals("TD"))
-            {
-                cores = Total_cores.Except(fliter).Where(c =>
-               (c.DeviceA == deviceName && c.BoardA == boardName) ||
-               (c.DeviceB == deviceName && c.BoardB == boardName)).ToList();
-            }
-            else
-            {
-                cores = Total_cores.Except(fliter).Where(c =>
-                (c.DeviceA == deviceName && c.BoardA == boardName && c.PortA == portName) ||
-                (c.DeviceB == deviceName && c.BoardB == boardName && c.PortB == portName)).ToList();
-            }
-            if (Check_KK_BYQ_List(KK_BYQ_list))//检查开关和变压器数量
-            {
-                return true;
-            }
-            if (cores.Count() == 0)//是否是终端
-            {
-                if (IsCorrectEnd(deviceName, boardName, portName))
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else if (cores.Count() == 1)
-            {
-                var core = cores.FirstOrDefault() ?? null!;
 
-                Tuple<string, string, string> anotherPort = GetAnotherPort(sdl, core, deviceName, boardName, portName, KK_BYQ_list);
-                fliter.Add(core);
-                bool flag = GetFarCore(sdl, anotherPort.Item1, anotherPort.Item2, anotherPort.Item3, fliter, KK_BYQ_list, Core_list);
-                if (flag)
-                {
-                    Core_list.Add(core);
-                    return true;
-                }
-            }
-            else
-            {
-                var coresFrist = cores.FirstOrDefault() ?? null!;
-                var coresLast = cores.LastOrDefault() ?? null!;
-                if(coresFrist.Class== "短连片" && coresLast.Class == "导线")
-                {
-                    coresFrist= cores.LastOrDefault() ?? null!;
-                    coresLast= cores.FirstOrDefault() ?? null!;
-                }
-                Tuple<string, string, string> anotherPortFirst = GetAnotherPort(sdl, coresFrist, deviceName, boardName, portName, KK_BYQ_list);
-                fliter.Add(coresFrist);
-                bool flagFirst = GetFarCore(sdl, anotherPortFirst.Item1, anotherPortFirst.Item2, anotherPortFirst.Item3, fliter, KK_BYQ_list, Core_list);
-                if (flagFirst)
-                {
-                    Core_list.Add(coresFrist);
-                    return true;
-                }
-                Tuple<string, string, string> anotherPortLast = GetAnotherPort(sdl, coresLast, deviceName, boardName, portName, KK_BYQ_list);
-                fliter.Add(coresLast);
-                bool flagLast = GetFarCore(sdl, anotherPortLast.Item1, anotherPortLast.Item2, anotherPortLast.Item3, fliter, KK_BYQ_list, Core_list);
-                if (flagLast)
-                {
-                    Core_list.Add(coresLast);
-                    return true;
-                }
-            }
-            return false;
-        }
-        private Tuple<string, string, string> GetAnotherPort(SDL sdl, Core core, string deviceName, string boardName, string portName, List<string> KK_BYQ_list)
+        private Tuple<string, string, string> GetAnotherPort(SDL sdl, Core core, string deviceName, string boardName, string portName)
         {
             string AnotherDevice = "";
             string AnotherBoard = "";
@@ -319,13 +242,13 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             {
                 if (int.TryParse(AnotherPort, out int portANumber))
                 {
-                    KK_BYQ_list.Add(AnotherDevice);
+
                     AnotherPort = (portANumber - 1).ToString();
                 }
             }
             else if (device.Class.Equals("PT"))
             {
-                KK_BYQ_list.Add(AnotherDevice);
+
                 AnotherPort = AnotherPort.ToUpper();
 
             }
@@ -342,42 +265,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             Tuple<string, string, string> tuple = new Tuple<string, string, string>(AnotherDevice, AnotherBoard, AnotherPort);
             return tuple;
         }
-        private bool IsCorrectEnd(string deviceName, string boardName, string portName)
-        {
-            // 1. 目标设备自身
-            if (deviceName == _targetDeviceKeeper.TargetDevice.Name)
-            {
-                var board = _targetDeviceKeeper.TargetDevice.Boards.FirstOrDefault(B => B.Name.Equals(boardName));
-                if (board != null && ACBORAD_REGEX.IsMatch(board.Desc))
-                {
-                    var port = board.Ports.FirstOrDefault(P => P.Name.Equals(portName));
-                    return port != null && REGEX_Ux.IsMatch(port.Desc);
-                }
-                // 目标设备不是交流板，直接视为终端
-                return true;
-            }
-            // 2. 变压器设备直接返回false
-            if (deviceName.Contains("BYQ"))
-            {
-                return false;
-            }
-            // 3. 其他情况默认true
-            return true;
-        }
-        private bool Check_KK_BYQ_List(List<string> KK_BYQ_list)
-        {
-            if (KK_BYQ_list.Count(L => L.Contains("KK")) >= 2)
-            {
-                // 使用LINQ获取所有KK的索引
-                var index = KK_BYQ_list
-                     .Select((value, index) => new { value, index })  // 同时获取值和索引
-                     .Where(item => item.value.Contains("KK"))        // 筛选出值为2的项
-                     .Select(item => item.index).ToList();            // 提取索引
-                KK_BYQ_list.RemoveAt(index.LastOrDefault());
-                return true;
-            }
-            return false;
-        }
+
         private void AlternatingCurrentLine(Items root, ACDeviceUint info, SDL sdl, int loopcount)
         {
             var safety = root.GetSafetys().FirstOrDefault(S => S.Name.StartsWith("接入交流线"));
@@ -498,6 +386,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         }
         private Tuple<string, string> GetEND(List<Core> cores)
         {
+
             var Devices = _sDLKeeper.SDL.Cubicle.Devices.ToList();
             string DeviceName = "";
             string BoardName = "";
@@ -510,8 +399,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             else if (cores.Count() >= 2)
             {
-                var core = cores.FirstOrDefault() ?? null!;
-                var core2 = cores[1] ?? null!;
+                var core = cores.LastOrDefault() ?? null!;
+                var core2 = cores[cores.Count() - 2] ?? null!;
                 if ((core.DeviceB == core2.DeviceB && core.BoardB == core2.BoardB) || (core.DeviceB == core2.DeviceA && core.BoardB == core2.BoardA))
                 {
                     DeviceName = core.DeviceA;
@@ -557,6 +446,130 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             var datset = ldevice.Datasets.FirstOrDefault(D => D.Name == "测量量");
             return datset != null && datset.Datas.Count > 0;
+        }
+        private void GetAllLines(SDL sdl, Device target, Board board, Port port, List<Core> line, List<List<Core>> totalLines)
+        {
+            GetAllLines(sdl, target.Name, board.Name, port.Name, line, totalLines);
+        }
+        private void GetAllLines(SDL sdl, string deviceName,
+        string boardName,
+        string portName,
+        List<Core> currentLine,
+        List<List<Core>> lines)
+        {
+            var totalCores = sdl.Cubicle.Cores.ToList();
+            var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == deviceName)!;
+            List<Core> nextCores = null!;
+
+            if (device.Class.Equals("TD"))
+            {
+                nextCores = totalCores.Except(currentLine).Where(c =>
+               ((c.DeviceA == deviceName && c.BoardA == boardName) ||
+               (c.DeviceB == deviceName && c.BoardB == boardName)) &&
+               !(c.DeviceA == c.DeviceB && c.BoardA == c.BoardB)).ToList();//排除自己连接自己的短连片
+            }
+            else
+            {
+                nextCores = totalCores.Except(currentLine).Where(c =>
+                (c.DeviceA == deviceName && c.BoardA == boardName && c.PortA == portName) ||
+                (c.DeviceB == deviceName && c.BoardB == boardName && c.PortB == portName)).ToList();
+            }
+            // 封装后的判断
+            if (ShouldEndSearch(currentLine, nextCores, device, boardName, portName))
+            {
+                if (ShouldSaveLine(currentLine, device, boardName, portName))
+                {
+                    lines.Add(new List<Core>(currentLine));
+                }
+                return;
+            }
+
+            foreach (var core in nextCores)
+            {
+                List<Core> newLine = new List<Core>(currentLine);
+                newLine.Add(core);
+                Tuple<string, string, string> anotherPort = GetAnotherPort(sdl, core, deviceName, boardName, portName);
+                GetAllLines(sdl, anotherPort.Item1, anotherPort.Item2, anotherPort.Item3, newLine, lines);
+            }
+        }
+        private bool ShouldEndSearch(List<Core> currentLine, List<Core> nextCores, Device device, string boardname, string portname)
+        {
+
+            if (nextCores.Count == 0)
+            {
+                return true;
+            }
+            if (GetKKCount(currentLine).Count() > 1 && device.Class.Equals("KK"))
+            {
+                return true;
+            }
+            if (device.Class.Equals("PT"))
+            {
+                if (GetBYQCount(currentLine).Count() > 1)
+                {
+                    return true;
+                }                
+            }
+            return false;
+        }
+
+        private bool ShouldSaveLine(List<Core> currentLine, Device device, string boardname, string portname)
+        {
+            var portdecs = device.Boards.FirstOrDefault(b => b.Name == boardname)?.Ports.FirstOrDefault(p => p.Name == portname)?.Desc;
+            if (device.Class.Equals("IED"))
+            {
+                if (portdecs != null)
+                {
+                    if (Regex_END.Any(R => R.IsMatch(portdecs)))
+                    {
+                        return false;
+                    }
+                }
+
+            }
+            return currentLine.Count > 0;
+        }
+        private List<string> GetKKCount(List<Core> line)
+        {
+            var KK = line.SelectMany(C => new List<string> { C.DeviceA, C.DeviceB }).Distinct();
+            return KK.Where(B => B.Contains("KK")).ToList();
+        }
+        private List<string> GetBYQCount(List<Core> line)
+        {
+            var BYQ = line.SelectMany(C => new List<string> { C.DeviceA, C.DeviceB }).Distinct();
+            return BYQ.Where(B => B.Contains("BYQ")).ToList();
+        }
+        private List<Core> GetTargetLine(List<List<Core>> lines)
+        {
+            foreach (var line in lines)
+            {
+                bool flag = false;
+                foreach (var core in line)
+                {
+                    var deviceA = _sDLKeeper.SDL.Cubicle.Devices.FirstOrDefault(d => d.Name == core.DeviceA);
+                    var deviceB = _sDLKeeper.SDL.Cubicle.Devices.FirstOrDefault(d => d.Name == core.DeviceB);
+                    if (deviceA != null && deviceB != null)
+                    {
+                        if (deviceA.Class.Equals("PT") || deviceB.Class.Equals("PT"))
+                        {
+                            if (Regex_MID.Any(R => R.IsMatch(core.PortA) || R.IsMatch(core.PortB)))
+                            {
+                                flag = true;
+                            }
+                        }
+                    }
+                }
+                if (!flag)
+                {
+                    return line.ToList();
+                }
+
+            }
+            if (lines.FirstOrDefault() != null)
+            {
+                return lines.FirstOrDefault().ToList();
+            }
+            return null;
         }
     }
 }

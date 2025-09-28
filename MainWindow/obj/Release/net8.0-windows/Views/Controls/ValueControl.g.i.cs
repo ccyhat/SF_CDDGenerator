@@ -54,8 +54,7 @@ namespace SFTemplateGenerator.MainWindow.Views.Controls {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/SFTemplateGenerator.MainWindow;V1.0.0.0;component/views/controls/valuecontrol.xa" +
-                    "ml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/SFTemplateGenerator.MainWindow;component/views/controls/valuecontrol.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\..\Views\Controls\ValueControl.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SFTemplateGenerator")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bce9e44299642b8336b2cc77642c7673880ff6b1")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6155dcb06a64a1b4645a74e7e8a673f5d77c4368")]
 [assembly: System.Reflection.AssemblyProductAttribute("SFTemplateGenerator")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SFTemplateGenerator")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

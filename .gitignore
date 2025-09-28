@@ -1,14 +1,7 @@
-# 用**匹配任意层级，确保无论Test在哪个目录都被忽略
-/Test/
-# 2. 忽略obj文件夹（同样匹配任意层级）
-Helper/obj/
-MainWindow/obj/
-Processor/obj/
-SFTemplateGenerator/obj/
 # 先忽略所有文件
 *
 
-# 允许进入所有子文件夹（关键：否则无法查找嵌套的.cs文件）
+# 允许进入所有子文件夹
 !*/
 
 # 不忽略 .gitignore 本身
@@ -16,3 +9,6 @@ SFTemplateGenerator/obj/
 
 # 不忽略所有.cs文件（包括任意嵌套层级）
 !**/*.cs
+
+# 忽略所有obj文件夹及其内容
+**/obj/

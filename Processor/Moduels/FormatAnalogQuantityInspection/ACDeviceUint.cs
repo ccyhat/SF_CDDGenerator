@@ -17,5 +17,5 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         public List<string> KK_BYQ_List2 { get; set; } = new List<string>(); // KK_BYQ
         public List<string> KK_BYQ_List3 { get; set; } = new List<string>(); // KK_BYQ
         public List<string> KK_BYQ_List4 { get; set; } = new List<string>(); // KK_BYQ
-    }
+    };
 }

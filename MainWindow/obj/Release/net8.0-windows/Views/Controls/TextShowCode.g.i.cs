@@ -72,8 +72,7 @@ namespace SFTemplateGenerator.MainWindow.Views.Controls {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/SFTemplateGenerator.MainWindow;V1.0.0.0;component/views/controls/textshowcode.xa" +
-                    "ml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/SFTemplateGenerator.MainWindow;component/views/controls/textshowcode.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\..\Views\Controls\TextShowCode.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

@@ -73,7 +73,7 @@ namespace SFTemplateGenerator.MainWindow.Views {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/SFTemplateGenerator.MainWindow;V1.0.0.0;component/views/loadingwindowview.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/SFTemplateGenerator.MainWindow;component/views/loadingwindowview.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\Views\LoadingWindowView.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);
