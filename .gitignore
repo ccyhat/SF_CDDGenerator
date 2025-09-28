@@ -1,0 +1,8 @@
+# 忽略整个test文件夹
+/Test/
+# 忽略所有文件
+*
+# 不忽略 .gitignore 文件
+!.gitignore
+# 不忽略 .cs 文件（如果需要保留）
+!**/*.cs
