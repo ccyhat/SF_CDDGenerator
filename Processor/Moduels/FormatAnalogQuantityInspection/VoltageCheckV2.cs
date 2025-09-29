@@ -196,8 +196,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         if (cores != null && cores.Count > 0)
                         {
                             infoList.Add(cores);
-                            var KK = GetKKCount(cores);
-                            var BYQ = GetBYQCount(cores);
+                            var KK = GetKKName(cores);
+                            var BYQ = GetBYQName(cores);
                             KK_BYQ.AddRange(KK);
                             KK_BYQ.AddRange(BYQ);
                         }
@@ -499,13 +499,13 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             {
                 return true;
             }
-            if (GetKKCount(currentLine).Count() > 1 && device.Class.Equals("KK"))
+            if (GetKKName(currentLine).Count() > 1 && device.Class.Equals("KK"))
             {
                 return true;
             }
             if (device.Class.Equals("PT"))
             {
-                if (GetBYQCount(currentLine).Count() > 1)
+                if (GetBYQName(currentLine).Count() > 1)
                 {
                     return true;
                 }                
@@ -529,12 +529,12 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             return currentLine.Count > 0;
         }
-        private List<string> GetKKCount(List<Core> line)
+        private List<string> GetKKName(List<Core> line)
         {
             var KK = line.SelectMany(C => new List<string> { C.DeviceA, C.DeviceB }).Distinct();
             return KK.Where(B => B.Contains("KK")).ToList();
         }
-        private List<string> GetBYQCount(List<Core> line)
+        private List<string> GetBYQName(List<Core> line)
         {
             var BYQ = line.SelectMany(C => new List<string> { C.DeviceA, C.DeviceB }).Distinct();
             return BYQ.Where(B => B.Contains("BYQ")).ToList();

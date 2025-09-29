@@ -171,13 +171,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 {
                     foreach (var port in portList)
                     {
-#if DEBUG
-                        if(port.Desc== "Ic2'")
-                        {
-                            int a = 0;
-                            
-                        }
-#endif
                         var KK_BYQ_list = new List<string>();
                         var cores = new List<Core>();
                         GetFarCore(sdl, target, board, port, new List<Core>(), KK_BYQ_list, cores);
