@@ -19,7 +19,6 @@ namespace SFTemplateGenerator.MainWindow.Shares
                 Children = new ObservableCollection<CTreeItem>(),
                 IsExpand = true
             };
-
             Tree = new ObservableCollection<CTreeItem>();
             Tree.Add(tree);
             SelectedNode = tree;
@@ -30,7 +29,6 @@ namespace SFTemplateGenerator.MainWindow.Shares
         public GuideBook GuideBook { get; private set; }
         public ObservableCollection<CTreeItem> Tree { get; set; }
         public CTreeItem SelectedNode { get; set; }
-
         public event PropertyChangedEventHandler PropertyChanged;
         public virtual void OnPropertyChanged(string propertyName)
         {
@@ -52,7 +50,6 @@ namespace SFTemplateGenerator.MainWindow.Shares
                     Children = new ObservableCollection<CTreeItem>(),
                     IsExpand = true,
                 };
-
                 BuildCTreeByDevice(childTree, item);
                 root.Children.Add(childTree);
             }
@@ -83,7 +80,6 @@ namespace SFTemplateGenerator.MainWindow.Shares
                         Name = macroTest.Name,
                         Children = new ObservableCollection<CTreeItem>()
                     };
-
                     BuildCTreeByMacroTests(child, macroTest);
                     root.Children.Add(child);
                 }
@@ -97,7 +93,6 @@ namespace SFTemplateGenerator.MainWindow.Shares
                         Name = safety.Name,
                         Children = new ObservableCollection<CTreeItem>()
                     });
-
                 }
                 if (type.Name == "Items")
                 {
@@ -114,7 +109,6 @@ namespace SFTemplateGenerator.MainWindow.Shares
                     root.Children.Add(child);
                 }
             }
-
         }
         private void BuildCTreeByCommCMDs(CTreeItem root, List<CommCMD> commCMDs)
         {
@@ -168,7 +162,6 @@ namespace SFTemplateGenerator.MainWindow.Shares
                         Children = new ObservableCollection<CTreeItem>()
                     });
                 }
-
                 if (type.Name == "Safety")
                 {
                     var safety = (Safety)data;
@@ -179,9 +172,7 @@ namespace SFTemplateGenerator.MainWindow.Shares
                         Name = safety.Name,
                         Children = new ObservableCollection<CTreeItem>()
                     });
-
                 }
-
             }
         }
     }

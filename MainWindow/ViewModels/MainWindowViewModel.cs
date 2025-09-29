@@ -57,7 +57,6 @@ namespace SFTemplateGenerator.MainWindow.ViewModels
             get { return _exceptionMessage; }
             set => Set(ref _exceptionMessage, value);
         }
-
         private string _isLoading = "Hidden";
         public string IsLoading
         {

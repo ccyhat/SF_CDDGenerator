@@ -15,7 +15,6 @@ namespace SFTemplateGenerator
     public class BootStrapper : BootstrapperBase
     {
         private Autofac.IContainer _container = null!;
-
         public BootStrapper()
         {
             Initialize();
@@ -28,7 +27,6 @@ namespace SFTemplateGenerator
 #else
             Logger.SetLogLevel(Logger.LogLevel.Warning);
 #endif
-
             Logger.ClearLog();
             await DisplayRootViewForAsync<IMainWindowViewModel>();
         }
@@ -38,7 +36,6 @@ namespace SFTemplateGenerator
             // 1. 注册 Caliburn.Micro 核心服务（必须先注册）
             builder.RegisterType<WindowManager>().As<IWindowManager>().SingleInstance();
             builder.RegisterType<Caliburn.Micro.EventAggregator>().As<Caliburn.Micro.IEventAggregator>().SingleInstance();
-
             // 注册所有模块
             builder.RegisterModule<MainWindowModule>();
             builder.RegisterModule<ProcessorModuel>();

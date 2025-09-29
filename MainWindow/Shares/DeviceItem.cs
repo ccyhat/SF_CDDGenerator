@@ -15,11 +15,8 @@ namespace SFTemplateGenerator.MainWindow.Shares
             get => _isSelected;
             set => Set(ref _isSelected, value);
         }
-
         public Device Device { get; private set; }
-
         public event PropertyChangedEventHandler PropertyChanged;
-
         protected virtual void RaiseNotifyPropertyChangedEvent(string propertyName)
         {
             if (PropertyChanged != null)

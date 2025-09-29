@@ -14,11 +14,9 @@ namespace SFTemplateGenerator.MainWindow.ViewModels
             Properties = new ObservableCollection<Tuple<string, Type, object>>();
             Data = null; // 初始化 Data 为 null
         }
-
         public IDisplayITem Data { get; set; }
         public ObservableCollection<Tuple<string, Type, object>> Properties { get; private set; }
         public event PropertyChangedEventHandler PropertyChanged;
-
         protected virtual void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

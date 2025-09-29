@@ -4,6 +4,5 @@ namespace SFTemplateGenerator.MainWindow.ViewModels
 {
     public class HomeViewModel : IHomeViewModel
     {
-
     }
 }
