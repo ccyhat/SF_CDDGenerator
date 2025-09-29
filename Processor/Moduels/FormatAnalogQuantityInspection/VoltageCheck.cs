@@ -16,8 +16,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private readonly ITargetDeviceKeeper _targetDeviceKeeper;
         private readonly ISDLKeeper _sDLKeeper;
         private readonly IDeviceModelKeeper _deviceModelKeeper;
-
-
         private readonly ISwitchTest _switchTest;
         private readonly IZeroSequenceVoltageCurrentTest _zeroSequenceVoltageCurrentTest;
         private readonly ISwitchTest_dsAnAin _switchTest_DsAnAin;
@@ -36,7 +34,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             {TESTER.PONOVOTester,new Regex(@"^电压检查（第一组）（博电）$")},
             {TESTER.PONOVOStandardSource,new Regex(@"^电压检查（第一组）（博电）$")},//博电标准源和博电测试仪模板一样
             {TESTER.ONLLYTester,new Regex(@"^电压检查（第一组）（昂立）$")},
-
         };
         public VoltageCheck(
             ITargetDeviceKeeper targetDeviceKeeper,
