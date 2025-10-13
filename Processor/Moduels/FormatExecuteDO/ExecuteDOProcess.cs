@@ -20,6 +20,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             new Regex(@"^通道故障(\d)?$"),
             new Regex(@"^通道一告警(\d)?$"),
             new Regex(@"^通道二告警(\d)?$"),
+            new Regex(@"^闭锁调压\(常闭\)$"),
         };
         private readonly List<Regex> REGEX_Air_Switch_Auxiliary_Contact = new List<Regex> {
             new Regex(@"^空开辅助接点"),
@@ -40,7 +41,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         }
         public Task ExecuteDOProcessAsync(SDL sdl, Items rootItem, List<string> NodeName)
         {
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => DOBORAD_REGEX.IsMatch(B.Desc)|| POWERBORAD_REGEX.IsMatch(B.Desc)).ToList();//开出插件
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => DOBORAD_REGEX.IsMatch(B.Desc)|| SIGNALBORAD_REGEX.IsMatch(B.Desc) || POWERBORAD_REGEX.IsMatch(B.Desc)).ToList();//开出插件
             Dictionary<string, List<DODeviceEnd>> DOObjectOperation = new Dictionary<string, List<DODeviceEnd>>();
             var regexMappings = new Dictionary<Regex, Dictionary<string, List<DODeviceEnd>>>
             {
@@ -140,6 +141,11 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                     CreateFault(dOObjectPair, rootItem);
                     break;
                 }
+                if (dODeviceEnd.StartPort.Item3.Desc.Contains("闭锁调压(常闭)"))
+                {
+                    CreateLockingVoltageRegulationNC(dOObjectPair, rootItem);
+                    break;
+                }
             }
         }
         private void CreateShouHeTongQi(DOPortPair DOObjectPair, Items rootItem)
@@ -210,6 +216,45 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                     safety.Name = $"提示接入表笔:{speakStrings}";
                     safety.DllCall.CData = $"SpeakString={speakStrings};ExpectString=是否完成;";
                     item.Name = $"{PortReallDesc}:{speakStrings}";
+                }
+                rootItem.ItemList.Add(item);
+                _nodename.Add(item.Name);
+            }
+        }
+        private void CreateLockingVoltageRegulationNC(DOPortPair DOObjectPair, Items rootItem)
+        {
+            var item = rootItem.GetItems().FirstOrDefault(p => p.Name == @"闭锁调压传动测试").Clone();
+            item.OrderNum = 2;
+            if (item != null)
+            {
+                var source = GetBoard_Port_PortDesc(DOObjectPair.dODeviceEnd2);
+                var PortReallDesc = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                var safety = item.GetSafetys().FirstOrDefault(p => p.Name == "提示接入表笔");
+                if (safety != null)
+                {
+                    var speakStrings = "";
+                    var tuple1 = DOObjectPair.dODeviceEnd1.GetEND(_sDLKeeper.SDL);
+                    var tuple2 = DOObjectPair.dODeviceEnd2.GetEND(_sDLKeeper.SDL);
+                    speakStrings = $"量{tuple1.Item1}{tuple1.Item2}和{tuple2.Item1}{tuple2.Item2}";
+                    item.Name = $"{PortReallDesc.Replace("ProtDO:", "")}传动测试：{speakStrings}";
+                    safety.Name = $"提示接入表笔:{speakStrings}";
+                    safety.DllCall.CData = $"SpeakString={speakStrings};ExpectString=是否完成;";
+                }
+                {
+                    var CommCMD = item.GetCommCMDs().FirstOrDefault(p => p.Name == "将装置信号变为1");
+                    if (CommCMD != null)
+                    {
+                        CommCMD.CMD.Value.FirstOrDefault().Id = $"{PortReallDesc}";
+                        CommCMD.CMD.Value.FirstOrDefault().Value = "1";
+                    }
+                }
+                {
+                    var CommCMD = item.GetCommCMDs().FirstOrDefault(p => p.Name == "将装置信号变为0");
+                    if (CommCMD != null)
+                    {
+                        CommCMD.CMD.Value.FirstOrDefault().Id = $"{PortReallDesc}";
+                        CommCMD.CMD.Value.FirstOrDefault().Value = "0";
+                    }
                 }
                 rootItem.ItemList.Add(item);
                 _nodename.Add(item.Name);

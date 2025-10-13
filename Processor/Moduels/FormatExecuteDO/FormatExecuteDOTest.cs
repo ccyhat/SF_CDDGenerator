@@ -26,7 +26,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         public async Task FormatExecuteDOAsync(Device TargetDevice, SDL sdl, GuideBook guideBook)
         {
             Logger.Info($"开出传动测试");
-            var boards = TargetDevice.Boards.Where(B => DOBORAD_REGEX.IsMatch(B.Desc)|| POWERBORAD_REGEX.IsMatch(B.Desc)).ToList();
+            var boards = TargetDevice.Boards.Where(B => DOBORAD_REGEX.IsMatch(B.Desc)|| SIGNALBORAD_REGEX.IsMatch(B.Desc) || POWERBORAD_REGEX.IsMatch(B.Desc)).ToList();
             Logger.Info($"开出插件和电源插件总数量：{boards.Count()}");
             if (boards.Count() == 0)
             {

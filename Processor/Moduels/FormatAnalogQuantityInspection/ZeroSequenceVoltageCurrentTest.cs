@@ -29,7 +29,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             _deviceModelKeeper = deviceModelKeeper;
         }
         // private List<ItemBase> newitems = new List<ItemBase>();
-        public Task ZeroSequenceVoltageCurrentProcess(SDL sdl, Items root, KeyValuePair<string, ACDeviceUint> info, TESTER mode)
+        public Task ZeroSequenceVoltageCurrentProcess(SDL sdl, Items root, KeyValuePair<(string, string), ACDeviceUint> info, TESTER mode)
         {
             if (mode == TESTER.PONOVOTester || mode == TESTER.PONOVOStandardSource)
             {
@@ -46,7 +46,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 
             return Task.CompletedTask;
         }
-        private void OnllyZeroSequenceVoltageCurrentProcess(SDL sdl, Items root, KeyValuePair<string, ACDeviceUint> info)
+        private void OnllyZeroSequenceVoltageCurrentProcess(SDL sdl, Items root, KeyValuePair<(string, string), ACDeviceUint> info)
         {
             bool has3I0 = _deviceModelKeeper.deviceModelCache.Has3I0();
             bool has3U0 = _deviceModelKeeper.deviceModelCache.Has3U0();
@@ -62,7 +62,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 root.ItemList = root.ItemList.Where(I => !I.Name.Equals("零序电压测试")).ToList();
             }
         }
-        private void PONOVOZeroSequenceVoltageCurrentProcess(SDL sdl, Items root, KeyValuePair<string, ACDeviceUint> info)
+        private void PONOVOZeroSequenceVoltageCurrentProcess(SDL sdl, Items root, KeyValuePair<(string, string), ACDeviceUint> info)
         {
             bool has3I0 = _deviceModelKeeper.deviceModelCache.Has3I0();
             bool has3U0 = _deviceModelKeeper.deviceModelCache.Has3U0();
@@ -78,7 +78,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 root.ItemList = root.ItemList.Where(I => !I.Name.Equals("零序电压测试")).ToList();
             }
         }
-        private void InitSafe_Command(MacroTest target, KeyValuePair<string, ACDeviceUint> info)
+        private void InitSafe_Command(MacroTest target, KeyValuePair<(string, string), ACDeviceUint> info)
         {
             List<ItemBase> newitems = new List<ItemBase>();
             int cpu_count = _deviceModelKeeper.TargetDeviceModel.LDevices.Count(LD => LD.Name.StartsWith("CPU"));
@@ -98,7 +98,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             target.Safety_CommCMD_List = newitems.ToList();
         }
-        private IS_CONTINUE NoKK(MacroTest target, KeyValuePair<string, ACDeviceUint> info)
+        private IS_CONTINUE NoKK(MacroTest target, KeyValuePair<(string, string), ACDeviceUint> info)
         {
             bool has3I0 = _deviceModelKeeper.deviceModelCache.Has3I0();
             bool has3U0 = _deviceModelKeeper.deviceModelCache.Has3U0();
@@ -126,7 +126,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{para}$cVal$mag$f\", v_Ub, -1, vg_MRUErrorRel); ");
                             count++;
                         }
-                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3U0($"3U0{info.Key}")}$cVal$mag$f\", v_Ua, -1, vg_MRUErrorRel); ");
+                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3U0($"3U0{info.Key.Item2}")}$cVal$mag$f\", v_Ua, -1, vg_MRUErrorRel); ");
                         count++;
                         if (ua != null)
                         {
@@ -142,7 +142,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{para}$cVal$ang$f\", -120, vg_MRUAngErrorAbs, -1);");
                             count++;
                         }
-                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3U0($"3U0{info.Key}")}$cVal$ang$f\", -60, vg_MRUAngErrorAbs, -1);");
+                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3U0($"3U0{info.Key.Item2}")}$cVal$ang$f\", -60, vg_MRUAngErrorAbs, -1);");
                         count++;
                     }
 
@@ -164,7 +164,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{para}$cVal$mag$f\", v_Ib, -1, vg_MRIErrorRel);");
                             count++;
                         }
-                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3I0($"3I0{info.Key}")}$cVal$mag$f\", v_Ia, -1, vg_MRIErrorRel);");
+                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3I0($"3I0{info.Key.Item2}")}$cVal$mag$f\", v_Ia, -1, vg_MRIErrorRel);");
                         count++;
                         if (ia != null)
                         {
@@ -180,7 +180,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{para}$cVal$ang$f\", -120, vg_MRIAngErrorAbs, -1);");
                             count++;
                         }
-                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3I0($"3I0{info.Key}")}$cVal$ang$f\", -60, vg_MRIAngErrorAbs, -1);");
+                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3I0($"3I0{info.Key.Item2}")}$cVal$ang$f\", -60, vg_MRIAngErrorAbs, -1);");
                         count++;
 
                     }
@@ -201,7 +201,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 return IS_CONTINUE.Continue;
             }
         }
-        private void InitSafe_Command(Items target, KeyValuePair<string, ACDeviceUint> info)
+        private void InitSafe_Command(Items target, KeyValuePair<(string, string), ACDeviceUint> info)
         {
             List<ItemBase> newitems = new List<ItemBase>();
             int cpu_count = _deviceModelKeeper.TargetDeviceModel.LDevices.Count(LD => LD.Name.StartsWith("CPU"));
@@ -221,7 +221,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             target.ItemList = newitems.ToList();
         }
-        private IS_CONTINUE NoKK(Items target, KeyValuePair<string, ACDeviceUint> info)
+        private IS_CONTINUE NoKK(Items target, KeyValuePair<(string, string), ACDeviceUint> info)
         {
             bool has3I0 = _deviceModelKeeper.deviceModelCache.Has3I0();
             bool has3U0 = _deviceModelKeeper.deviceModelCache.Has3U0();
@@ -249,7 +249,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{para}$cVal$mag$f\", v_Ub, -1, vg_MRUErrorRel); ");
                             count++;
                         }
-                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3U0($"3U0{info.Key}")}$cVal$mag$f\", v_Ua, -1, vg_MRUErrorRel); ");
+                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3U0($"3U0{info.Key.Item2}")}$cVal$mag$f\", v_Ua, -1, vg_MRUErrorRel); ");
                         count++;
                         if (ua != null)
                         {
@@ -265,7 +265,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{para}$cVal$ang$f\", -120, vg_MRUAngErrorAbs, -1);");
                             count++;
                         }
-                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3U0($"3U0{info.Key}")}$cVal$ang$f\", -60, vg_MRUAngErrorAbs, -1);");
+                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3U0($"3U0{info.Key.Item2}")}$cVal$ang$f\", -60, vg_MRUAngErrorAbs, -1);");
                         count++;
                     }
 
@@ -287,7 +287,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{para}$cVal$mag$f\", v_Ib, -1, vg_MRIErrorRel);");
                             count++;
                         }
-                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3I0($"3I0{info.Key}")}$cVal$mag$f\", v_Ia, -1, vg_MRIErrorRel);");
+                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3I0($"3I0{info.Key.Item2}")}$cVal$mag$f\", v_Ia, -1, vg_MRIErrorRel);");
                         count++;
                         if (ia != null)
                         {
@@ -303,7 +303,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{para}$cVal$ang$f\", -120, vg_MRIAngErrorAbs, -1);");
                             count++;
                         }
-                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3I0($"3I0{info.Key}")}$cVal$ang$f\", -60, vg_MRIAngErrorAbs, -1);");
+                        sb.AppendLine($"nRsltJdg = nRsltJdg + CalAinError(\"{_deviceModelKeeper.deviceModelCache.Get3I0($"3I0{info.Key.Item2}")}$cVal$ang$f\", -60, vg_MRIAngErrorAbs, -1);");
                         count++;
 
                     }

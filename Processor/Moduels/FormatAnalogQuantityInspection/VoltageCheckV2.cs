@@ -21,16 +21,43 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private readonly IZeroSequenceVoltageCurrentTest _zeroSequenceVoltageCurrentTest;
         private readonly ISwitchTest_dsAnAin _switchTest_DsAnAin;
         //开关量正则表达式
-        private static readonly Regex REGEX_ACPORTS = new Regex(@"^(U|3U|I|3I)([ABCNXabcnx0])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase);
-        private static readonly Regex REGEX_Uabc = new Regex(@"^(U)([abcABC])(\d{0,2})?$", RegexOptions.IgnoreCase);
-        private static readonly Regex REGEX_Un = new Regex(@"^(U)([nN])(\d{0,2})$", RegexOptions.IgnoreCase);
-        private static readonly Regex REGEX_Uabc_hat = new Regex(@"^(U)([cC])(\d{0,2})[\`\']$", RegexOptions.IgnoreCase);
-        private static readonly Regex REGEX_Ux = new Regex(@"^(3U|U)([0xX])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase);//
-        private static readonly Regex REGEX_Iabc = new Regex(@"^(I)([abcABC])(\d{0,2})?$", RegexOptions.IgnoreCase);
-        private static readonly Regex REGEX_In = new Regex(@"^(I)([nN])(\d{0,2})$", RegexOptions.IgnoreCase);
-        private static readonly Regex REGEX_Iabc_hat = new Regex(@"^(I)([cC])(\d{0,2})[\`\']$", RegexOptions.IgnoreCase);//
-        private static readonly Regex REGEX_I0 = new Regex(@"^(3I|I)([0xX])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase);//
+        private static readonly List<Regex> REGEX_ACPORTS = new List<Regex> {
+            new Regex(@"^(U|3U|I|3I)([ABCNXabcnx0])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U|3U|I|3I)(h|g|m)(\d{0,2})([ABCNXabcnx0])[\`\']?$", RegexOptions.IgnoreCase)
+        };
+        private static readonly List<Regex> REGEX_Uabc = new List<Regex> {
+            new Regex(@"^(U)([abcABC])(\d{0,2})?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U)(h|g|m)(\d{0,2})([abcABC])?$", RegexOptions.IgnoreCase),
+        };
+        private static readonly List<Regex> REGEX_Un = new List<Regex> {
+            new Regex(@"^(U)([nN])(\d{0,2})$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U)(h|g|m)(\d{0,2})([nN])$", RegexOptions.IgnoreCase),
+        };
+        private static readonly List<Regex> REGEX_Uabc_hat = new List<Regex> {
+            new Regex(@"^(U)([cC])(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U)(h|g|m)(\d{0,2})([cC])[\`\']$", RegexOptions.IgnoreCase),
+        };
+        private static readonly List<Regex> REGEX_Ux = new List<Regex> {
+            new Regex(@"^(3U|U)([0xX])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(3U|U)(h|g|m)(\d{0,2})([0xX])[\`\']?$", RegexOptions.IgnoreCase),
+        };
+        private static readonly List<Regex> REGEX_Iabc = new List<Regex> {
+            new Regex(@"^(I)([abcABC])(\d{0,2})?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(I)(h|g|m)(\d{0,2})([abcABC])?$", RegexOptions.IgnoreCase),
+        };
+        private static readonly List<Regex> REGEX_In = new List<Regex> {
+            new Regex(@"^(I)([nN])(\d{0,2})$", RegexOptions.IgnoreCase),
+            new Regex(@"^(I)(h|g|m)(\d{0,2})([nN])$", RegexOptions.IgnoreCase),
+        };
+        private static readonly List<Regex> REGEX_Iabc_hat = new List<Regex> {
+            new Regex(@"^(I)([cC])(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
+            new Regex(@"^(I)(h|g|m)(\d{0,2})([cC])[\`\']$", RegexOptions.IgnoreCase),
+        };
+        private static readonly List<Regex> REGEX_I0 = new List<Regex> {
+            new Regex(@"^(3I|I)([0xX])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(3I|I)(h|g|m)(\d{0,2})([0xX])[\`\']?$", RegexOptions.IgnoreCase),
 
+        };
         private static readonly List<Regex> Regex_END = new List<Regex>()
         {
             new Regex(@"Ua\d?'"),
@@ -73,16 +100,15 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         {
 
             //获取交流插件
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => ACBORAD_REGEX.IsMatch(B.Desc)).ToList();
-
-            Dictionary<string, ACDeviceUint> dictionary = new Dictionary<string, ACDeviceUint>();
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => ACBORAD_REGEX.IsMatch(B.Desc)).OrderBy(B => B.Desc).ToList();        
+            Dictionary<(string, string), ACDeviceUint> dictionary = new Dictionary<(string, string), ACDeviceUint>();
             //循环添加
             for (int i = 0; i < boards.Count(); i++)
             {
                 var items = GetInfo(sdl, _targetDeviceKeeper.TargetDevice, boards[i]);
                 foreach (var item in items)
                 {
-                    dictionary.Add(item.Key, item.Value);
+                    dictionary.Add((i.ToString(),item.Key), item.Value);
                 }
             }
             if (dictionary.Count() == 0)
@@ -135,10 +161,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             var groupedByTail = new Dictionary<string, List<Port>>();
             foreach (var p in ports)
             {
-                Match match = null!;
+                Match match = REGEX_ACPORTS.Select(r => r.Match(p.Desc)).FirstOrDefault(m => m.Success);
                 string tailStr = null!;
                 // 按顺序尝试匹配
-                if ((match = REGEX_ACPORTS.Match(p.Desc)).Success)
+                if (match!=null&&match.Success)
                 {
                     // 提取尾号
                     tailStr = match.Groups[3].Value;
@@ -169,20 +195,34 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 var i_0_ports = new List<Port>();
                 foreach (var p in group.Value)
                 {
-                    if ((REGEX_Uabc).IsMatch(p.Desc)) u_ports.Add(p);
-                    else if (REGEX_Un.IsMatch(p.Desc)) u_n_ports.Add(p);
-                    else if (REGEX_Uabc_hat.IsMatch(p.Desc)) u_n_ports.Add(p);
-                    else if (REGEX_Ux.IsMatch(p.Desc)) u_x_ports.Add(p);
-                    else if (REGEX_Iabc.IsMatch(p.Desc)) i_ports.Add(p);
-                    else if (REGEX_In.IsMatch(p.Desc))
+                    if (REGEX_Uabc.Any(R => R.IsMatch(p.Desc)))
+                    {
+                        u_ports.Add(p);
+                    }
+                    else if (REGEX_Un.Any(R => R.IsMatch(p.Desc)))
+                    {
+                        u_n_ports.Add(p);
+                    }
+                    else if (REGEX_Uabc_hat.Any(R => R.IsMatch(p.Desc))) {
+                        u_n_ports.Add(p);
+                    } 
+                    else if (REGEX_Ux.Any(R => R.IsMatch(p.Desc))) {
+                        u_x_ports.Add(p);
+                    } 
+                    else if (REGEX_Iabc.Any(R => R.IsMatch(p.Desc))) {
+                        i_ports.Add(p);
+                    } 
+                    else if (REGEX_In.Any(R => R.IsMatch(p.Desc)))
                     {
                         i_n_ports.Add(p);
                     }
-                    else if (REGEX_Iabc_hat.IsMatch(p.Desc) && !i_n_ports.Any())
+                    else if (REGEX_Iabc_hat.Any(R => R.IsMatch(p.Desc)) && !i_n_ports.Any())
                     {
                         i_n_ports.Add(p);
                     }
-                    else if (REGEX_I0.IsMatch(p.Desc)) i_0_ports.Add(p);
+                    else if (REGEX_I0.Any(R => R.IsMatch(p.Desc))) {
+                        i_0_ports.Add(p);
+                    }
                 }
                 var info = new ACDeviceUint();
                 void AddCores(IEnumerable<Port> portList, List<List<Core>> infoList, List<string> KK_BYQ)
@@ -463,14 +503,16 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 
             if (device.Class.Equals("TD"))
             {
-                nextCores = totalCores.Except(currentLine).Where(c =>
+                nextCores = totalCores.Except(currentLine).Where(c => c.Class != "接地")
+                    .Where(c =>
                ((c.DeviceA == deviceName && c.BoardA == boardName) ||
                (c.DeviceB == deviceName && c.BoardB == boardName)) &&
                !(c.DeviceA == c.DeviceB && c.BoardA == c.BoardB)).ToList();//排除自己连接自己的短连片
             }
             else
             {
-                nextCores = totalCores.Except(currentLine).Where(c =>
+                nextCores = totalCores.Except(currentLine).Where(c => c.Class != "接地")
+                    .Where(c =>
                 (c.DeviceA == deviceName && c.BoardA == boardName && c.PortA == portName) ||
                 (c.DeviceB == deviceName && c.BoardB == boardName && c.PortB == portName)).ToList();
             }

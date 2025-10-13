@@ -7,6 +7,7 @@ namespace SFTemplateGenerator.Helper.Constants
         public static readonly Regex ACBORAD_REGEX = new Regex(@"交流(板|插件)\d?");
         public static readonly Regex DCBORAD_REGEX = new Regex(@"直流(板|插件)\d?");
         public static readonly Regex DOBORAD_REGEX = new Regex(@"开出(板|插件)\d?");
+        public static readonly Regex SIGNALBORAD_REGEX = new Regex(@"信号(板|插件)\d?");
         public static readonly Regex DIBORAD_REGEX = new Regex(@"开入(板|插件)\d?");
         public static readonly Regex POWERBORAD_REGEX = new Regex(@"电源(板|插件)\d?");
         public static readonly Regex OPBORAD_REGEX = new Regex(@"操作(板|插件)\d?");

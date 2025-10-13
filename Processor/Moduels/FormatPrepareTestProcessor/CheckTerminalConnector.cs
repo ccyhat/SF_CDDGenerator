@@ -120,7 +120,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPrepareTestProcessor
             }
             foreach (var core in nextCores)
             {
-                cores.Add(core);
+                if(!cores.Any(c=>c==core))
+                {
+                    cores.Add(core);
+                }                
                 Tuple<string, string, string> anotherPort = GetAnotherPort(sdl, core, deviceName, boardName);
                 GetAllCores(sdl, anotherPort.Item1, anotherPort.Item2, cores);
             }
@@ -135,6 +138,12 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPrepareTestProcessor
         private void GetAllTDLines(SDL sdl, Device device, List<Board> boards,
         List<List<Core>> lines)
         {
+#if DEBUG
+            if(device.Name=="5QD")
+            {
+                int a = 0;
+            }
+#endif
             var board = boards.FirstOrDefault();
             if (board != null)
             {

@@ -26,9 +26,12 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
         };
         private readonly List<Regex> REGEX_SELFTEST = new() {
             new Regex("YD"),
-            new Regex("GD"),
+            
             new Regex("KD"),
             new Regex(@"(\d)P(\d)?D")
+        };
+        private readonly List<Regex> REGEX_PUBLIC_SELFTEST = new() {
+            new Regex("GD"),
         };
         private readonly List<Regex> ISCONTINUE = new() {
             new Regex(@"\d{1}-\d{1,2}DQ"),
@@ -43,6 +46,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
         };
         List<Regex> REGEX_MAINTENANCE = new(){
             new Regex(@"^保护检修状态"),
+             new Regex(@"^检修\+"),
         };
         List<Regex> REGEX_IBusbar = new(){
             new Regex(@"^投I母电压$"),
@@ -232,7 +236,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
                     CreateShouHeTongQi(rootItem, dIObject);
                 }
                 //从其他端子排引入
-                else if (HasMatchingSelfTestTdDevice(devices) && IsNotPublicBoard(dIObject, publicBoardList))
+                else if (HasMatchingSelfTestTdDevice(devices) && !HasMatchingGDSelfTestTdDevice(devices) && IsNotPublicBoard(dIObject, publicBoardList))
                 {
                     CreateTest_By_Worker(rootItem, dIObject);
                 }
@@ -253,6 +257,11 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
                     {
                         CreateFG(rootItem, dIObject);
                     }
+                }
+                //从其他端子排引入
+                else if (HasMatchingGDSelfTestTdDevice(devices) && IsNotPublicBoard(dIObject, publicBoardList))
+                {
+                    CreateTest_By_Worker(rootItem, dIObject);
                 }
                 else
                 {
@@ -869,12 +878,19 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             return boards;
         }
         // 提取为单独的方法，明确逻辑意图
-        private bool HasMatchingSelfTestTdDevice(List<Device> devices)
+        private bool HasMatchingSelfTestTdDevice( List<Device> devices)
         {
             // 筛选出Class为"TD"的设备
             var tdDevices = devices.Where(d => d.Class.Equals("TD"));
             // 检查是否有任何TD设备的Name匹配SELFTEST正则
             return REGEX_SELFTEST.Any(regex => tdDevices.Any(device => regex.IsMatch(device.Name)));
+        }
+        private bool HasMatchingGDSelfTestTdDevice(List<Device> devices)
+        {
+            // 筛选出Class为"TD"的设备
+            var tdDevices = devices.Where(d => d.Class.Equals("TD"));
+            // 检查是否有任何TD设备的Name匹配SELFTEST正则
+            return REGEX_PUBLIC_SELFTEST.Any(regex => tdDevices.Any(device => regex.IsMatch(device.Name)));
         }
         private bool IsNotPublicBoard(DIDeviceEnd deviceEnd, List<string> publicBoardList)
         {

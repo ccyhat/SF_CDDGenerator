@@ -32,22 +32,30 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPrepareTestProcessor
         };
         public Task ConnectTimeSynchronizationLineAsync(Device TargetDevice, SDL sdl, Items root)
         {
-            var board = TargetDevice.Boards.FirstOrDefault(B => MANAGEBORAD_REGEX.Any(R=>R.IsMatch(B.Desc)));
-            var ports = board.Ports.Where(P => timeSyncTypes.Any(T => T.Equals(P.Desc)));
-            var tupleA = FindNearestPort(sdl, TargetDevice, board, ports.FirstOrDefault());
-            var tupleB = FindNearestPort(sdl, TargetDevice, board, ports.LastOrDefault());
-            StringBuilder sb = new StringBuilder();
-            sb.Append("SpeakString=对时接入");
-            sb.Append($"{tupleA.Item1}{tupleA.Item2}和{tupleB.Item2};ExpectString=是否完成;");
-            var template = root.GetSafetys().FirstOrDefault(S => S.Name.StartsWith("接入对时线"));
-            if (template != null)
+            var boards = TargetDevice.Boards.Where(B => MANAGEBORAD_REGEX.Any(R=>R.IsMatch(B.Desc)));
+            foreach(var board in boards)
             {
-                template.Name = "接入对时线";
-                if (template.DllCall != null)
+                var ports = board.Ports.Where(P => timeSyncTypes.Any(T => T.Equals(P.Desc)));
+                if(ports.Count()>=2)
                 {
-                    template.DllCall.CData = sb.ToString();
+                    var tupleA = FindNearestPort(sdl, TargetDevice, board, ports.FirstOrDefault());
+                    var tupleB = FindNearestPort(sdl, TargetDevice, board, ports.LastOrDefault());
+                    StringBuilder sb = new StringBuilder();
+                    sb.Append("SpeakString=对时接入");
+                    sb.Append($"{tupleA.Item1}{tupleA.Item2}和{tupleB.Item2};ExpectString=是否完成;");
+                    var template = root.GetSafetys().FirstOrDefault(S => S.Name.StartsWith("接入对时线"));
+                    if (template != null)
+                    {
+                        template.Name = "接入对时线";
+                        if (template.DllCall != null)
+                        {
+                            template.DllCall.CData = sb.ToString();
+                        }
+                    }
                 }
             }
+          
+            
             return Task.CompletedTask;
         }
         private Tuple<string, string, string> FindNearestPort(SDL sdl, Device device, Board board, Port port)
