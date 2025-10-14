@@ -46,16 +46,11 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPrepareTestProcessor
                     var template = root.GetSafetys().FirstOrDefault(S => S.Name.StartsWith("接入对时线"));
                     if (template != null)
                     {
-                        template.Name = "接入对时线";
-                        if (template.DllCall != null)
-                        {
-                            template.DllCall.CData = sb.ToString();
-                        }
+                        template.Name = "接入对时线";                    
+                        template.DllCall.CData = sb.ToString();                        
                     }
                 }
-            }
-          
-            
+            }                      
             return Task.CompletedTask;
         }
         private Tuple<string, string, string> FindNearestPort(SDL sdl, Device device, Board board, Port port)

@@ -20,41 +20,42 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private readonly IZeroSequenceVoltageCurrentTest _zeroSequenceVoltageCurrentTest;
         private readonly ISwitchTest_dsAnAin _switchTest_DsAnAin;
         //开关量正则表达式
+        private static readonly Regex REGEX_HIGHVOLTAGE= new Regex(@"(h|g|m|l)", RegexOptions.IgnoreCase);
         private static readonly List<Regex> REGEX_ACPORTS = new List<Regex> { 
-            new Regex(@"^(U|3U|I|3I)([ABCNXabcnx0])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
-            new Regex(@"^(U|3U|I|3I)(h|g|m|l)(\d{0,2})([ABCNXabcnx0])[\`\']?$", RegexOptions.IgnoreCase)
+            new Regex(@"^(U|3U|I|3I)([abcnx0])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@$"^(U|3U|I|3I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([abcnx0])[\`\']?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Uabc = new List<Regex> { 
-            new Regex(@"^(U)([abcABC])(\d{0,2})?$", RegexOptions.IgnoreCase),
-            new Regex(@"^(U)(h|g|m|l)(\d{0,2})([abcABC])?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U)([abc])(\d{0,2})$", RegexOptions.IgnoreCase),
+            new Regex(@$"^(U){REGEX_HIGHVOLTAGE}(\d{{0,2}})([abc])$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Un = new List<Regex> { 
-            new Regex(@"^(U)([nN])(\d{0,2})$", RegexOptions.IgnoreCase),
-            new Regex(@"^(U)(h|g|m|l)(\d{0,2})([nN])$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U)([n])(\d{0,2})$", RegexOptions.IgnoreCase),
+            new Regex(@$"^(U){REGEX_HIGHVOLTAGE}(\d{{0,2}})([n])$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Uabc_hat = new List<Regex> { 
-            new Regex(@"^(U)([cC])(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
-            new Regex(@"^(U)(h|g|m|l)(\d{0,2})([cC])[\`\']$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U)([c])(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
+            new Regex(@$"^(U){REGEX_HIGHVOLTAGE}(\d{{0,2}})([c])[\`\']$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Ux = new List<Regex> { 
-            new Regex(@"^(3U|U)([0xX])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
-            new Regex(@"^(3U|U)(h|g|m|l)(\d{0,2})([0xX])[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(3U|U)([0x])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@$"^(3U|U){REGEX_HIGHVOLTAGE}(\d{{0,2}})([0x])[\`\']?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Iabc = new List<Regex> {
-            new Regex(@"^(I)([abcABC])(\d{0,2})?$", RegexOptions.IgnoreCase),
-            new Regex(@"^(I)(h|g|m|l)(\d{0,2})([abcABC])?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(I)([abc])(\d{0,2})$", RegexOptions.IgnoreCase),
+            new Regex(@$"^(I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([abc])$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_In = new List<Regex> { 
-            new Regex(@"^(I)([nN])(\d{0,2})$", RegexOptions.IgnoreCase),
-            new Regex(@"^(I)(h|g|m|l)(\d{0,2})([nN])$", RegexOptions.IgnoreCase),
+            new Regex(@"^(I)([n])(\d{0,2})$", RegexOptions.IgnoreCase),
+            new Regex(@$"^(I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([n])$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Iabc_hat = new List<Regex> {
-            new Regex(@"^(I)([cC])(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
-            new Regex(@"^(I)(h|g|m|l)(\d{0,2})([cC])[\`\']$", RegexOptions.IgnoreCase),
+            new Regex(@"^(I)([c])(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
+            new Regex(@$"^(I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([c])[\`\']$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_I0 = new List<Regex> { 
-            new Regex(@"^(3I|I)([0xX])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
-            new Regex(@"^(3I|I)(h|g|m|l)(\d{0,2})([0xX])[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(3I|I)([0x])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@$"^(3I|I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([0x])[\`\']?$", RegexOptions.IgnoreCase),
 
         };
         //guidebook正则表达式
@@ -144,14 +145,21 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             var groupedByTail = new Dictionary<string, List<Port>>();
             foreach (var p in ports)
             {
-                Match match = REGEX_ACPORTS.Select(r => r.Match(p.Desc)).FirstOrDefault(m => m.Success);
-                string tailStr = null!;
+                Match match = REGEX_ACPORTS.Select(r => r.Match(p.Desc)).FirstOrDefault(m => m.Success)!;
+               
                 // 按顺序尝试匹配
                 if (match != null && match.Success)
                 {
                     // 提取尾号
-                    tailStr = match.Groups[3].Value;
+                    string tailStr = match.Groups[3].Value;
                     string tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
+
+                    string tailStr1 = match.Groups[2].Value;
+                    if( REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
+                    {
+                        tailNumber = tailStr1 + tailNumber;
+                    }
+
                     // 检查字典中是否已存在该尾号的键
                     if (!groupedByTail.ContainsKey(tailNumber))
                     {
