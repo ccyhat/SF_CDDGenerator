@@ -4,6 +4,7 @@ using SFTemplateGenerator.Processor.Interfaces;
 using SFTemplateGenerator.Processor.Interfaces.FormatExecuteDI;
 using System.Data;
 using System.Text.RegularExpressions;
+using System.Windows.Input;
 using static SFTemplateGenerator.Helper.Constants.CDDRegex;
 using static SFTemplateGenerator.Helper.UtilityTools.RegexProcess;
 
@@ -25,8 +26,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             new Regex("FG")
         };
         private readonly List<Regex> REGEX_SELFTEST = new() {
-            new Regex("YD"),
-            
+            new Regex("YD"),         
             new Regex("KD"),
             new Regex(@"(\d)P(\d)?D")
         };
@@ -45,8 +45,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             new Regex(@"^KM\+$"),
         };
         List<Regex> REGEX_MAINTENANCE = new(){
-            new Regex(@"^保护检修状态"),
-             new Regex(@"^检修\+"),
+            new Regex(@"^保护检修状态$"),
+            new Regex(@"^检修\+$"),
+            new Regex(@"^检修状态$"),
         };
         List<Regex> REGEX_IBusbar = new(){
             new Regex(@"^投I母电压$"),
@@ -56,15 +57,21 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
         };
         List<Regex> REGEX_IBusbarNO = new(){
             new Regex(@"^I母刀闸常开$"),
+            new Regex(@"^启动第一组继电器$"),
+            
         };
         List<Regex> REGEX_IIBusbarNO = new(){
             new Regex(@"^II母刀闸常开$"),
+            new Regex(@"^启动第二组继电器$"),
+            
         };
         List<Regex> REGEX_IBusbarNC = new(){
             new Regex(@"^I母刀闸常闭$"),
+            new Regex(@"^复归第一组继电器$"),
         };
         List<Regex> REGEX_IIBusbarNC = new(){
             new Regex(@"^II母刀闸常闭$"),
+             new Regex(@"^复归第二组继电器$"),
         };
         private static readonly List<Regex> REGEX_VOLTAGESWITCH_7QD = new(){
             new Regex(@"7Q\d?D"),
@@ -514,22 +521,38 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
         }
         private Tuple<string, string> FindPowerNode()
         {
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => POWERBORAD_REGEX.IsMatch(B.Desc)).ToList();
-            foreach (var board in boards)
+            if (CEKONG_DEVICE_REGEX.IsMatch(_targetDeviceKeeper.TargetDevice.Model))
             {
-                var powerport = board.Ports.FirstOrDefault(P => REGEX_POSITIVE.Any(R => R.IsMatch(P.Desc)));
-                if (powerport != null)
-                {
-                    //获取电源节点
-                    var core = _sDLKeeper.SDL.Cubicle.Cores.FirstOrDefault(C => C.DeviceA.Equals(_targetDeviceKeeper.TargetDevice.Name) && C.BoardA.Equals(board.Name) && C.PortA.Equals(powerport.Name));
-                    if (core == null)
+                var GD = _sDLKeeper.SDL.Cubicle.Devices.Select(
+                    D =>
                     {
-                        core = _sDLKeeper.SDL.Cubicle.Cores.FirstOrDefault(C => C.DeviceB.Equals(_targetDeviceKeeper.TargetDevice.Name) && C.BoardB.Equals(board.Name) && C.PortB.Equals(powerport.Name));
-                        return new Tuple<string, string>(core.DeviceA, core.BoardA);
+                        int index = D.Name.IndexOf('-');
+                        return index >= 0 ? D.Name.Substring(index + 1) : D.Name;
                     }
-                    return new Tuple<string, string>(core.DeviceB, core.BoardB);
+                    ).Where(D => D.Contains("GD")).Distinct().ToList();
+                var res_GD =GetModifiedRegexList(_targetDeviceKeeper.TargetDevice.Name, GD);
+                return new Tuple<string, string>(res_GD.FirstOrDefault(), "2");
+            }
+            else
+            {
+                var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => POWERBORAD_REGEX.IsMatch(B.Desc)).ToList();
+                foreach (var board in boards)
+                {
+                    var powerport = board.Ports.FirstOrDefault(P => REGEX_POSITIVE.Any(R => R.IsMatch(P.Desc)));
+                    if (powerport != null)
+                    {
+                        //获取电源节点
+                        var core = _sDLKeeper.SDL.Cubicle.Cores.FirstOrDefault(C => C.DeviceA.Equals(_targetDeviceKeeper.TargetDevice.Name) && C.BoardA.Equals(board.Name) && C.PortA.Equals(powerport.Name));
+                        if (core == null)
+                        {
+                            core = _sDLKeeper.SDL.Cubicle.Cores.FirstOrDefault(C => C.DeviceB.Equals(_targetDeviceKeeper.TargetDevice.Name) && C.BoardB.Equals(board.Name) && C.PortB.Equals(powerport.Name));
+                            return new Tuple<string, string>(core.DeviceA, core.BoardA);
+                        }
+                        return new Tuple<string, string>(core.DeviceB, core.BoardB);
+                    }
                 }
             }
+             
             return new Tuple<string, string>("", "");
         }
         private void RemoveMaintenance(List<DIDeviceEnd> DIList)

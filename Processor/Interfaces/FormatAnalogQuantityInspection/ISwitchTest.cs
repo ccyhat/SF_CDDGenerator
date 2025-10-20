@@ -8,6 +8,6 @@ namespace SFTemplateGenerator.Processor.Interfaces.FormatAnalogQuantityInspectio
 {
     public interface ISwitchTest
     {
-        public Task SwitchTestProcess(SDL sdl, Items root, KeyValuePair<(string,string), ACDeviceUint> info, TESTER tester);
+        public Task SwitchTestProcess(SDL sdl, Items root, KeyValuePair<string, ACDeviceUint> info, TESTER tester);
     }
 }

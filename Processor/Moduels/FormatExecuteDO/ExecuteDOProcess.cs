@@ -19,7 +19,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             new Regex(@"手合同期"),
             new Regex(@"^通道故障(\d)?$"),
             new Regex(@"^通道一告警(\d)?$"),
+            new Regex(@"^通道一告警(\d)?\(常闭\)$"),
             new Regex(@"^通道二告警(\d)?$"),
+            new Regex(@"^通道二告警(\d)?\(常闭\)$"),
             new Regex(@"^闭锁调压\(常闭\)$"),
         };
         private readonly List<Regex> REGEX_Air_Switch_Auxiliary_Contact = new List<Regex> {
@@ -631,8 +633,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             var AuxiliaryContact = sdl.Cubicle.Devices.Where(D => REGEX_Air_Switch_Auxiliary_Contact.Any(R => R.IsMatch(D.Desc)));
             foreach (var KKdevice in AuxiliaryContact)
             {
-                var tuple1 = FindNearestPort(sdl, KKdevice.Name, "", "11");
-                var tuple2 = FindNearestPort(sdl, KKdevice.Name, "", "12");
+                var tuple1 = FindNearestPort(sdl, KKdevice.Name, "", "11",new List<Core>());
+                var tuple2 = FindNearestPort(sdl, KKdevice.Name, "", "12", new List<Core>());
                 var item = rootItem.GetItems().FirstOrDefault(I => I.Name == @"空开辅助接点测试").Clone();
                 item.OrderNum = 3;
                 if (item != null)
@@ -824,21 +826,35 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         }
         private Tuple<string, string, string> FindNearestPort(SDL sdl, Device device, Board board, Port port)
         {
-            return FindNearestPort(sdl, device.Name, board.Name, port.Name);
+            return FindNearestPort(sdl, device.Name, board.Name, port.Name, new List<Core>());
         }
-        private Tuple<string, string, string> FindNearestPort(SDL sdl, string device, string board, string port)
+        private Tuple<string, string, string> FindNearestPort(SDL sdl, string device, string board, string port,List<Core> fliter)
         {
-            var core = sdl.Cubicle.Cores.FirstOrDefault(C =>
+            var cores = sdl.Cubicle.Cores.Except(fliter).Where(C =>
                (C.DeviceA == device && C.BoardA == board && C.PortA == port) ||
                (C.DeviceB == device && C.BoardB == board && C.PortB == port)
                );
-            if (core != null)
+            foreach(var core in cores)
             {
+                fliter.Add(core);
                 var otherDeviceName = core.DeviceA == device ? core.DeviceB : core.DeviceA;
                 var otherBoardName = core.BoardA == board ? core.BoardB : core.BoardA;
                 var otherPortName = core.PortA == port ? core.PortB : core.PortA;
-                return new Tuple<string, string, string>(otherDeviceName, otherBoardName, otherPortName);
-            }
+                var otherDevice = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == otherDeviceName);
+                Tuple<string, string, string>res = null;
+                if ( otherDevice != null && otherDevice.Class != "TD")
+                {
+                    res = FindNearestPort(sdl, otherDeviceName, otherBoardName, otherPortName, fliter);
+                }
+                else
+                {
+                    res = new Tuple<string, string, string>(otherDeviceName, otherBoardName, otherPortName);
+                }
+                if(res!=null && res.Item1 != "" && res.Item2 != "" && res.Item3 != "")
+                {
+                    return res;
+                }                                           
+            }        
             return new Tuple<string, string, string>("", "", "");
         }
     }

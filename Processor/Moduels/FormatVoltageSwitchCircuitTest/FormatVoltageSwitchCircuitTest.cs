@@ -19,7 +19,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatVoltageSwitchCircuitTest
         public Task FormatVoltageSwitchCircuitTestAsync(Device TargetDevice, SDL sdl, GuideBook guideBook)
         {
             Logger.Info($"电压切换回路测试");
-            var boards = TargetDevice.Boards.Where(B => SWITCHBORAD_REGEX.IsMatch(B.Desc)).ToList();
+            var boards = TargetDevice.Boards.Where(B => SWITCHBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).ToList();
             Logger.Info($"电压切换插件数量：{boards.Count}");
             if (boards.Count() == 0)
             {

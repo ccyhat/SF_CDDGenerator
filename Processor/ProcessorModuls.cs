@@ -166,7 +166,6 @@ namespace SFTemplateGenerator.Processor
         }
         private void LoadExcuteDI(ContainerBuilder builder)
         {
-
             builder.RegisterType<FormatExecuteDITest>()
                 .As<IFormatExecuteDITest>()
                 .InstancePerDependency();

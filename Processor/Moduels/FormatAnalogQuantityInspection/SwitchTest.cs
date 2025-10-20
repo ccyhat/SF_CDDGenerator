@@ -29,7 +29,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             _deviceModelKeeper = deviceModelKeeper;
             _targetDeviceKeeper = targetDeviceKeeper;
         }
-        public Task SwitchTestProcess(SDL sdl, Items root, KeyValuePair<(string, string), ACDeviceUint> info, TESTER tester)
+        public Task SwitchTestProcess(SDL sdl, Items root, KeyValuePair<string, ACDeviceUint> info, TESTER tester)
         {
             newitems.Clear();
             if (tester == TESTER.PONOVOTester || tester == TESTER.PONOVOStandardSource)
@@ -46,7 +46,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             return Task.CompletedTask;
         }
-        private void ONLLYSwitchTestProcess(SDL sdl, Items root, KeyValuePair<(string, string), ACDeviceUint> info)
+        private void ONLLYSwitchTestProcess(SDL sdl, Items root, KeyValuePair<string, ACDeviceUint> info)
         {
             var item = root.GetItems().FirstOrDefault(MT => MT.Name.Equals("开关测试"));
             var output = item.GetSafetys().FirstOrDefault(I => I.Name.Contains("加量")).Clone();
@@ -90,7 +90,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             stop.OrderNum = 99;
             newitems.Add(stop);
         }
-        private void PONOVOSwitchTestProcess(SDL sdl, Items root, KeyValuePair<(string, string), ACDeviceUint> info)
+        private void PONOVOSwitchTestProcess(SDL sdl, Items root, KeyValuePair<string, ACDeviceUint> info)
         {
             var target = root.GetMacroTests().FirstOrDefault(MT => MT.Name.Equals("开关测试"));
 
@@ -132,7 +132,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 
 
         }
-        private void InitSafe_Command(MacroTest target, KeyValuePair<(string, string), ACDeviceUint> info)
+        private void InitSafe_Command(MacroTest target, KeyValuePair<string, ACDeviceUint> info)
         {
 
             int cpu_count = _deviceModelKeeper.TargetDeviceModel.LDevices.Count(LD => LD.Name.StartsWith("CPU"));
@@ -182,7 +182,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             target.Safety_CommCMD_List = newitems.ToList();
         }
-        private IS_CONTINUE NoKK(MacroTest target, KeyValuePair<(string, string), ACDeviceUint> info)
+        private IS_CONTINUE NoKK(MacroTest target, KeyValuePair<string, ACDeviceUint> info)
         {
             var commands = target.GetCommCMDs();
             foreach (var command in commands)
@@ -270,7 +270,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 return IS_CONTINUE.Continue;
             }
         }
-        private IS_CONTINUE ONEKK(MacroTest target, KeyValuePair<(string, string), ACDeviceUint> info)
+        private IS_CONTINUE ONEKK(MacroTest target, KeyValuePair<string, ACDeviceUint> info)
         {
             var commCmds = target.GetCommCMDs();
             var commCmdsDeepCopy = commCmds.Select(cmd => cmd.Clone()).ToList();
@@ -350,11 +350,21 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     }
                     if (info.Value.Group4 != null && info.Value.Group4.Count > 0)
                     {
-                        foreach (var item in info.Value.Group3.GetRange(0, 1))
+                        foreach (var item in info.Value.Group4.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
                             var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, vg_U1VErrorAbs, -1); ");
+                            count++;
+                        }
+                    }
+                    if (info.Value.Group5 != null && info.Value.Group5.Count > 0)
+                    {
+                        foreach (var item in info.Value.Group5.GetRange(0, 1))
+                        {
+                            var source = GetBoardPort(item);
+                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, vg_U1VErrorAbs, -1); ");
                             count++;
                         }
                     }
@@ -382,7 +392,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 return IS_CONTINUE.Continue;
             }
         }
-        private IS_CONTINUE TWOKK(MacroTest target, KeyValuePair<(string, string), ACDeviceUint> info)
+        private IS_CONTINUE TWOKK(MacroTest target, KeyValuePair<string, ACDeviceUint> info)
         {
             var commCmds = target.GetCommCMDs();
             var commCmdsDeepCopy = commCmds.Select(cmd => cmd.Clone()).ToList();
@@ -421,11 +431,21 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     }
                     if (info.Value.Group4 != null && info.Value.Group4.Count > 0)
                     {
-                        foreach (var item in info.Value.Group3.GetRange(0, 1))
+                        foreach (var item in info.Value.Group4.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
                             var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, vg_U1VErrorAbs, -1); ");
+                            count++;
+                        }
+                    }
+                    if (info.Value.Group5 != null && info.Value.Group5.Count > 0)
+                    {
+                        foreach (var item in info.Value.Group5.GetRange(0, 1))
+                        {
+                            var source = GetBoardPort(item);
+                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, vg_U1VErrorAbs, -1); ");
                             count++;
                         }
                     }
@@ -446,7 +466,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             target.Safety_CommCMD_List.AddRange(commCmdsDeepCopy);
             return IS_CONTINUE.Stop;
         }
-        private void InitSafe_Command(Items target, KeyValuePair<(string, string), ACDeviceUint> info)
+        private void InitSafe_Command(Items target, KeyValuePair<string, ACDeviceUint> info)
         {
 
 
@@ -497,7 +517,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             target.ItemList = newitems.ToList();
         }
-        private IS_CONTINUE NoKK(Items target, KeyValuePair<(string, string), ACDeviceUint> info)
+        private IS_CONTINUE NoKK(Items target, KeyValuePair<string, ACDeviceUint> info)
         {
             var commands = target.GetCommCMDs();
             foreach (var command in commands)
@@ -583,7 +603,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 return IS_CONTINUE.Continue;
             }
         }
-        private IS_CONTINUE ONEKK(Items target, KeyValuePair<(string, string), ACDeviceUint> info)
+        private IS_CONTINUE ONEKK(Items target, KeyValuePair<string, ACDeviceUint> info)
         {
             var commCmds = target.GetCommCMDs();
             var commCmdsDeepCopy = commCmds.Select(cmd => cmd.Clone()).ToList();
@@ -659,11 +679,21 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     }
                     if (info.Value.Group4 != null && info.Value.Group4.Count > 0)
                     {
-                        foreach (var item in info.Value.Group3.GetRange(0, 1))
+                        foreach (var item in info.Value.Group4.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
                             var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, vg_U1VErrorAbs, -1); ");
+                            count++;
+                        }
+                    }
+                    if (info.Value.Group5 != null && info.Value.Group5.Count > 0)
+                    {
+                        foreach (var item in info.Value.Group5.GetRange(0, 1))
+                        {
+                            var source = GetBoardPort(item);
+                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, vg_U1VErrorAbs, -1); ");
                             count++;
                         }
                     }
@@ -689,7 +719,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 return IS_CONTINUE.Continue;
             }
         }
-        private IS_CONTINUE TWOKK(Items target, KeyValuePair<(string, string), ACDeviceUint> info)
+        private IS_CONTINUE TWOKK(Items target, KeyValuePair<string, ACDeviceUint> info)
         {
             var commCmds = target.GetCommCMDs();
             var commCmdsDeepCopy = commCmds.Select(cmd => cmd.Clone()).ToList();
@@ -727,11 +757,21 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     }
                     if (info.Value.Group4 != null && info.Value.Group4.Count > 0)
                     {
-                        foreach (var item in info.Value.Group3.GetRange(0, 1))
+                        foreach (var item in info.Value.Group4.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
                             var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, vg_U1VErrorAbs, -1); ");
+                            count++;
+                        }
+                    }
+                    if (info.Value.Group5 != null && info.Value.Group5.Count > 0)
+                    {
+                        foreach (var item in info.Value.Group5.GetRange(0, 1))
+                        {
+                            var source = GetBoardPort(item);
+                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, vg_U1VErrorAbs, -1); ");
                             count++;
                         }
                     }

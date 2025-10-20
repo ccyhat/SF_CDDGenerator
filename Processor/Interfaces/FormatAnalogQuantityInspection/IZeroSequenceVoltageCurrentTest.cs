@@ -8,6 +8,6 @@ namespace SFTemplateGenerator.Processor.Interfaces.FormatAnalogQuantityInspectio
 {
     public interface IZeroSequenceVoltageCurrentTest
     {
-        public Task ZeroSequenceVoltageCurrentProcess(SDL sdl, Items root, KeyValuePair<(string, string), ACDeviceUint> info, TESTER mode);
+        public Task ZeroSequenceVoltageCurrentProcess(SDL sdl, Items root, KeyValuePair<string, ACDeviceUint> info, TESTER mode);
     }
 }

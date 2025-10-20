@@ -38,7 +38,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                 var root = guideBook.Device.Items.Where(I => I.Name.Equals("开出传动测试")).FirstOrDefault()!;
                 await _prepareExecuteDO.PrepareExecuteDOAsync(_nodename);
                 await _executeDOProcess.ExecuteDOProcessAsync(sdl, root, _nodename);
-                if (TargetDevice.Model.Contains("200F"))
+                if (CEKONG_DEVICE_REGEX.IsMatch(TargetDevice.Model))
                 {
                     var dicOrder = root.ItemList
                         .Select(item => item.Name)

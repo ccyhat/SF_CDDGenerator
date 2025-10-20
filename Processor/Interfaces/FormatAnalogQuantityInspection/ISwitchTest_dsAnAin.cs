@@ -8,7 +8,7 @@ namespace SFTemplateGenerator.Processor.Interfaces.FormatAnalogQuantityInspectio
 {
     public interface ISwitchTest_dsAnAin
     {
-        public Task SwitchTest_dsAnAinProcess(SDL sdl, Items root, KeyValuePair<(string, string), ACDeviceUint> info, TESTER tester);
+        public Task SwitchTest_dsAnAinProcess(SDL sdl, Items root, KeyValuePair<string, ACDeviceUint> info, TESTER tester);
 
     }
 }

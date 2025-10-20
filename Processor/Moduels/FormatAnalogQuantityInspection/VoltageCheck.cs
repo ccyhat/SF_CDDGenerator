@@ -20,10 +20,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private readonly IZeroSequenceVoltageCurrentTest _zeroSequenceVoltageCurrentTest;
         private readonly ISwitchTest_dsAnAin _switchTest_DsAnAin;
         //开关量正则表达式
-        private static readonly Regex REGEX_HIGHVOLTAGE= new Regex(@"(h|g|m|l)", RegexOptions.IgnoreCase);
+        private static readonly Regex REGEX_HIGHVOLTAGE= new Regex(@"(h|g|m|l|p)", RegexOptions.IgnoreCase);
         private static readonly List<Regex> REGEX_ACPORTS = new List<Regex> { 
-            new Regex(@"^(U|3U|I|3I)([abcnx0])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(U|3U|I|3I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([abcnx0])[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U|3U|I|3I)([abcnx0j])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@$"^(U|3U|I|3I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([abcnx0j])[\`\']?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Uabc = new List<Regex> { 
             new Regex(@"^(U)([abc])(\d{0,2})$", RegexOptions.IgnoreCase),
@@ -56,7 +56,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private static readonly List<Regex> REGEX_I0 = new List<Regex> { 
             new Regex(@"^(3I|I)([0x])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
             new Regex(@$"^(3I|I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([0x])[\`\']?$", RegexOptions.IgnoreCase),
-
+        };
+        private static readonly List<Regex> REGEX_IJ = new List<Regex> {
+            new Regex(@"^(3I|I)([j])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@$"^(3I|I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([j])[\`\']?$", RegexOptions.IgnoreCase),
         };
         //guidebook正则表达式
         private static readonly Dictionary<TESTER, Regex> REGEX_TEMPLATE = new Dictionary<TESTER, Regex>() {
@@ -82,17 +85,24 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         }
         public Task VoltageCheckProcess(SDL sdl, Items root, List<string> _nodename)
         {
-
             //获取交流插件
             var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => ACBORAD_REGEX.IsMatch(B.Desc)).OrderBy(B => B.Desc).ToList();
-            Dictionary<ValueTuple<string,string>, ACDeviceUint> dictionary = new Dictionary<ValueTuple<string, string>, ACDeviceUint>();
+            Dictionary<string, ACDeviceUint> dictionary = new Dictionary<string, ACDeviceUint>();
             //循环添加
             for (int i = 0; i < boards.Count(); i++)
             {
                 var items = GetInfo(sdl, _targetDeviceKeeper.TargetDevice, boards[i]);
                 foreach (var item in items)
                 {
-                    dictionary.Add((i.ToString(),item.Key), item.Value);
+                    if(dictionary.ContainsKey(item.Key))
+                    {
+
+                        dictionary[item.Key].Add(item.Value);
+                    }
+                    else
+                    {
+                        dictionary.Add(item.Key, item.Value);
+                    }                   
                 }
             }
             if (dictionary.Count() == 0)
@@ -153,7 +163,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     // 提取尾号
                     string tailStr = match.Groups[3].Value;
                     string tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
-
+                    
                     string tailStr1 = match.Groups[2].Value;
                     if( REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
                     {
@@ -184,6 +194,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 var i_ports = new List<Port>();
                 var i_n_ports = new List<Port>();
                 var i_0_ports = new List<Port>();
+                var i_j_ports = new List<Port>();
                 foreach (var p in group.Value)
                 {
                     if (REGEX_Uabc.Any(R => R.IsMatch(p.Desc))){
@@ -209,7 +220,11 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     }
                     else if (REGEX_I0.Any(R => R.IsMatch(p.Desc))){
                         i_0_ports.Add(p);
-                    }                    
+                    }
+                    else if (REGEX_IJ.Any(R => R.IsMatch(p.Desc)))
+                    {
+                        i_j_ports.Add(p);
+                    }
                 }
                 var info = new ACDeviceUint();
                 void AddCores(IEnumerable<Port> portList, List<List<Core>> infoList, List<string> KK_BYQ)
@@ -236,7 +251,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 AddCores(i_ports, info.Group3, info.KK_BYQ_List3);
                 AddCores(i_n_ports, info.Group3, info.KK_BYQ_List3);
                 AddCores(i_0_ports, info.Group4, info.KK_BYQ_List4);
-                if (info.Group1.Count == 0 && info.Group2.Count == 0 && info.Group3.Count == 0 && info.Group4.Count == 0)
+                AddCores(i_j_ports, info.Group5, info.KK_BYQ_List5);
+                if (info.Group1.Count == 0 && info.Group2.Count == 0 && info.Group3.Count == 0 && info.Group4.Count == 0 && info.Group5.Count == 0)
                 {
                     continue;
                 }
@@ -249,7 +265,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             GetFarCore(sdl, target.Name, board.Name, port.Name, fliter, KK_BYQ_list, Core_list);
             if (Core_list.Count() == 0 && fliter.Count() > 0)
             {
-                Core_list.Add(fliter.FirstOrDefault());
+                Core_list.Add(fliter.FirstOrDefault()!);
             }
         }
         private bool GetFarCore(SDL sdl, string deviceName,
@@ -429,7 +445,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     string deviceName = "";
                     for (int i = 0; i < info.Group1.Count(); i++)
                     {
-
                         List<Core> cores = info.Group1[i];
                         Tuple<string, string> end_device_board = GetEND(cores);
                         if (deviceName != end_device_board.Item1)
@@ -523,6 +538,30 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             sb.Append($"{end_device_board.Item2}");
                         }
                         if (i < info.Group4.Count() - 1)
+                        {
+                            sb.Append("、 ");
+                        }
+                    }
+                    sb.Append(".");
+                }
+                if (info.Group5 != null && info.Group5.Count() > 0)
+                {
+                    sb.Append("  IJ接");
+                    string deviceName = "";
+                    for (int i = 0; i < info.Group5.Count(); i++)
+                    {
+                        List<Core> cores = info.Group5[i];
+                        Tuple<string, string> end_device_board = GetEND(cores);
+                        if (deviceName != end_device_board.Item1)
+                        {
+                            sb.Append($"{end_device_board.Item1}{end_device_board.Item2}");
+                            deviceName = end_device_board.Item1;
+                        }
+                        else
+                        {
+                            sb.Append($"{end_device_board.Item2}");
+                        }
+                        if (i < info.Group5.Count() - 1)
                         {
                             sb.Append("、 ");
                         }

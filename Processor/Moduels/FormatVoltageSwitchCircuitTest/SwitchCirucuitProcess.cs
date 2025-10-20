@@ -76,7 +76,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatVoltageSwitchCircuitTest
         {
             Regex comm = new Regex(@"^[UV]\w$");
             Dictionary<string, List<SwtichDODeviceEnd>> SwtichComm = new Dictionary<string, List<SwtichDODeviceEnd>>();
-            var boards = device.Boards.Where(B => SWITCHBORAD_REGEX.IsMatch(B.Desc));
+            var boards = device.Boards.Where(B => SWITCHBORAD_REGEX.Any(R=>R.IsMatch(B.Desc)));
             foreach (var board in boards)
             {
                 foreach (var port in board.Ports)
