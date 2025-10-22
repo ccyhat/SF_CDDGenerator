@@ -39,9 +39,11 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatVoltageSwitchCircuitTest
         }
         List<Regex> REGEX_IBusbarNO = new(){
             new Regex(@"^I母刀闸常开$"),
+            new Regex(@"^启动第一组继电器$"),
         };
         List<Regex> REGEX_IIBusbarNO = new(){
             new Regex(@"^II母刀闸常开$"),
+            new Regex(@"^启动第二组继电器$"),
         };
         Dictionary<string, List<SwtichDODeviceEnd>> swtichDOObject = new();
         List<Tuple<string, string>> action_pairs = new();

@@ -133,7 +133,7 @@ namespace SFTemplateGenerator.MainWindow.ViewModels
         }
         public async void GenerateProcess(List<Device> devices)
         {
-            //try
+            try
             {
                 Units.Clear();
                 _targetDeviceKeeper.SetDevice(devices.FirstOrDefault()!);
@@ -203,7 +203,7 @@ namespace SFTemplateGenerator.MainWindow.ViewModels
                     SelectAll = false;
                 }
             }
-           // catch (Exception ex)
+            catch (Exception ex)
             {
                 _notifyException.RaiseException(this, "发生未知异常.请联系工艺研发部接口人协助处理.");
             }

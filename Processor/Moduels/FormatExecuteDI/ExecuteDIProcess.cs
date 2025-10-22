@@ -44,6 +44,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
         private static readonly List<Regex> REGEX_DI_COMM = new(){
             new Regex(@"^KM\+$"),
         };
+        List<Regex> REGEX_EXTENSION = new()
+        {
+            new Regex(@"^分相跳闸位置TWJ[abc]$"),
+        };
         List<Regex> REGEX_MAINTENANCE = new(){
             new Regex(@"^保护检修状态$"),
             new Regex(@"^检修\+$"),
@@ -75,6 +79,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
         };
         private static readonly List<Regex> REGEX_VOLTAGESWITCH_7QD = new(){
             new Regex(@"7Q\d?D"),
+        };
+        private static readonly List<Regex> REGEX_REMOTETRIP = new()
+        {
+            new Regex(@"^远方跳闸(\d)?$"),
         };
         private List<string> workerTestList = new();//存储自行测试名称
         private List<string> workerBSTestList = new();//存储自行测试名称
@@ -123,26 +131,100 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
                     }
                 }
             }
+           
             Create_DI_By_Desc(rootItem, DIObjectList);
             RemoveMaintenance(DIObjectList);
             RemoveNoConnection(DIObjectList);
+            var EX_boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => EXBORAD_REGEX.IsMatch(B.Desc)).ToList();
+            if (EX_boards != null)
+            {
+                foreach (var pos in ExtensionBoardMatcher.SwitchPosition)
+                {
+                    foreach (var dIObject in DIObjectList.Where(DI => REGEX_EXTENSION.Any(R => R.IsMatch(DI.StartPort.Item3.Desc))))
+                    {
+                        CreateExtensionBoard(rootItem, dIObject, pos);
+                    }
+                }
+                 
+                DIObjectList.RemoveAll(DI => REGEX_EXTENSION.Any(R => R.IsMatch(DI.StartPort.Item3.Desc)));
+            }
             CreateDIObject(rootItem, DIObjectList);
             NodeName.AddRange(this._nodename);
             return Task.CompletedTask;
         }
         private void Create_DI_By_Desc(Items rootItem, List<DIDeviceEnd> DIObjectList)
         {
-            foreach (var dIObjcet in DIObjectList)
+            foreach (var dIObject in DIObjectList)
             {
-                if (REGEX_IBusbar.Any(R => R.IsMatch(dIObjcet.StartPort.Item3.Desc)))
+                if (REGEX_IBusbar.Any(R => R.IsMatch(dIObject.StartPort.Item3.Desc)))
                 {
-                    CreateBusbar(rootItem, dIObjcet, REGEX_IBusbarNO, REGEX_IBusbarNC);
+                    CreateBusbar(rootItem, dIObject, REGEX_IBusbarNO, REGEX_IBusbarNC);
                 }
-                if (REGEX_IIBusbar.Any(R => R.IsMatch(dIObjcet.StartPort.Item3.Desc)))
+                if (REGEX_IIBusbar.Any(R => R.IsMatch(dIObject.StartPort.Item3.Desc)))
                 {
-                    CreateBusbar(rootItem, dIObjcet, REGEX_IIBusbarNO, REGEX_IIBusbarNC);
+                    CreateBusbar(rootItem, dIObject, REGEX_IIBusbarNO, REGEX_IIBusbarNC);
                 }
             }
+        }
+        private void CreateExtensionBoard(Items rootItem, DIDeviceEnd DIObject,string pos)
+        {
+            
+                var item = rootItem.GetItems().FirstOrDefault(p => p.Name == @"开入x测试（示例）").Clone();
+                if (item != null)
+                {
+                    var source = GetBoard_Port_PortDesc(DIObject);
+                    var PortReallDesc = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                    var indataSet = _deviceModelKeeper.deviceModelCache.GetDataSetId(source.Item1, source.Item2, PortReallDesc);
+                    var safety = item.GetSafetys().FirstOrDefault(p => p.Name == "提示接入开入信号");
+                    if (safety != null)
+                    {
+                      
+                        var PowerNode = FindPowerNode();
+                        var KKName = DIObject.GetKKName(_sDLKeeper.SDL, "BS");
+                        var EX_board = _targetDeviceKeeper.TargetDevice.Boards.FirstOrDefault(B => EXBORAD_REGEX.IsMatch(B.Desc));
+                    
+                        if (ExtensionBoardMatcher.ExtensionPortDesc.ContainsKey((pos, DIObject.StartPort.Item3.Desc)))
+                        {
+                            var EX_portDesc = ExtensionBoardMatcher.ExtensionPortDesc[(pos, DIObject.StartPort.Item3.Desc)];
+                            var EX_port = EX_board.Ports.Where(P=>P.Desc.Equals(EX_portDesc)).FirstOrDefault();
+                            var port=FindNearestPort(_sDLKeeper.SDL, DIObject.StartPort.Item1.Name, EX_board.Name, EX_port.Name, new List<Core>());
+                            var speakStrings = $"{KKName}置{pos}位,{PowerNode.Item1}{PowerNode.Item2}点{port.Item1}{port.Item2}";
+                            safety.Name = $"提示:{speakStrings}";
+                            item.Name = $"{PortReallDesc.Replace("ProtDO:", "")}开入测试:{speakStrings}";
+                            safety.DllCall.CData = $"SpeakString={speakStrings};ExpectString=无;";
+                        }
+                    }
+                    var CommCMD = item.GetCommCMDs().FirstOrDefault(p => p.Name == "判断开入状态（示例）");
+                    if (CommCMD != null)
+                    {
+                        CommCMD.Name = "判断开入状态";
+                        CommCMD.Type = "ReadSoe";
+                        if (indataSet != "")
+                        {
+                            CommCMD.DsvScript.InDataSet = "Device1$" + indataSet;
+                            if (indataSet.Equals("dsRelayEna"))
+                            {
+                                CommCMD.DsvScript.Type = "query";
+                            }
+                        }
+                        var element = CommCMD.DsvScript.Elements.FirstOrDefault();
+                        if (element != null)
+                        {
+                            element.Name = PortReallDesc;
+                            element.Id = PortReallDesc;
+                            var arrtId = element.Attrs.FirstOrDefault(p => p.Name.ToLower() == "id");
+                            var arrtvalue = element.Attrs.FirstOrDefault(p => p.Name.ToLower() == "value");
+                            if (arrtId != null)
+                            {
+                                arrtId.Value = PortReallDesc;
+                            }
+                        }
+                    }
+                    rootItem.ItemList.Add(item);
+                    _nodename.Add(item.Name);
+                }
+            //}
+            
         }
         private void CreateBusbar(Items rootItem, DIDeviceEnd DIObject, List<Regex> BusbarNORegex, List<Regex> BusbarNCRegex)
         {
@@ -246,6 +328,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
                 else if (HasMatchingSelfTestTdDevice(devices) && !HasMatchingGDSelfTestTdDevice(devices) && IsNotPublicBoard(dIObject, publicBoardList))
                 {
                     CreateTest_By_Worker(rootItem, dIObject);
+                }
+                else if (REGEX_REMOTETRIP.Any(R => R.IsMatch(dIObject.StartPort.Item3.Desc)))
+                {
+                    CreateTest_Remote_Trip(rootItem, dIObject);
                 }
                 else if (FirstKKdevice != null)
                 {
@@ -468,9 +554,54 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             {
                 workerTestList.Add(ybName);
             }
-
-
-
+        }
+        private void CreateTest_Remote_Trip(Items rootItem, DIDeviceEnd DIObject)
+        {
+            var item = rootItem.GetItems().FirstOrDefault(p => p.Name == @"开入x测试（示例）").Clone();
+            if (item != null)
+            {
+                var PowerNode = FindPowerNode();
+                var source = GetBoard_Port_PortDesc(DIObject);
+                var PortReallDesc = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                var indataSet = _deviceModelKeeper.deviceModelCache.GetDataSetId(source.Item1, source.Item2, PortReallDesc);
+                var safety = item.ItemList.FirstOrDefault(p => p.Name == "提示接入开入信号") as Safety;
+                if (safety != null)
+                {
+                    var YBName = DIObject.GetKKName(_sDLKeeper.SDL, "YB");
+                    var tuple1 = DIObject.GetEND(_sDLKeeper.SDL);
+                    var speakStrings = $"闭合{YBName},{PowerNode.Item1}{PowerNode.Item2}点{tuple1.Item1}{tuple1.Item2}";
+                    safety.Name = $"提示:{speakStrings}";
+                    item.Name = $"{PortReallDesc.Replace("ProtDO:", "")}开入测试:{speakStrings}";
+                    safety.DllCall.CData = $"SpeakString={speakStrings};ExpectString=无;";
+                }
+                var CommCMD = item.GetCommCMDs().FirstOrDefault(p => p.Name == "判断开入状态（示例）");
+                if (CommCMD != null)
+                {
+                    CommCMD.Name = "判断开入状态";
+                    CommCMD.Type = "ReadSoe";
+                    if (indataSet != "")
+                    {
+                        CommCMD.DsvScript.InDataSet = "Device1$" + indataSet;
+                        if (indataSet.Equals("dsRelayEna"))
+                        {
+                            CommCMD.DsvScript.Type = "query";
+                        }
+                    }
+                    var element = CommCMD.DsvScript.Elements.FirstOrDefault();
+                    if (element != null)
+                    {
+                        element.Name = PortReallDesc;
+                        element.Id = PortReallDesc;
+                        var arrtId = element.Attrs.FirstOrDefault(p => p.Name.ToLower() == "id");
+                        if (arrtId != null)
+                        {
+                            arrtId.Value = PortReallDesc;
+                        }
+                    }
+                }
+                rootItem.ItemList.Add(item);
+                _nodename.Add(item.Name);
+            }
         }
         private void CreateNode(Items rootItem, DIDeviceEnd DIObject)
         {
@@ -519,6 +650,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
                 _nodename.Add(item.Name);
             }
         }
+       
         private Tuple<string, string> FindPowerNode()
         {
             if (CEKONG_DEVICE_REGEX.IsMatch(_targetDeviceKeeper.TargetDevice.Model))
@@ -568,6 +700,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             // 移除cores为空的节点，同时去掉连到YD的线段
             DIList.RemoveAll(di => di.cores == null || di.cores.Count == 0);
         }
+       
         private void GetFarCore(SDL sdl, Device target, Board board, Port port, List<Core> fliter, List<Core> Core_list)
         {
             GetFarCore(sdl, target.Name, board.Name, port.Name, fliter, Core_list);
@@ -918,6 +1051,35 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
         private bool IsNotPublicBoard(DIDeviceEnd deviceEnd, List<string> publicBoardList)
         {
             return !deviceEnd.ContainsPublicBoard(publicBoardList);
+        }
+        private Tuple<string, string, string> FindNearestPort(SDL sdl, string device, string board, string port, List<Core> fliter)
+        {
+            var cores = sdl.Cubicle.Cores.Except(fliter).Where(C =>
+               (C.DeviceA == device && C.BoardA == board && C.PortA == port) ||
+               (C.DeviceB == device && C.BoardB == board && C.PortB == port)
+               );
+            foreach (var core in cores)
+            {
+                fliter.Add(core);
+                var otherDeviceName = core.DeviceA == device ? core.DeviceB : core.DeviceA;
+                var otherBoardName = core.BoardA == board ? core.BoardB : core.BoardA;
+                var otherPortName = core.PortA == port ? core.PortB : core.PortA;
+                var otherDevice = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == otherDeviceName);
+                Tuple<string, string, string> res = null;
+                if (otherDevice != null && otherDevice.Class != "TD")
+                {
+                    res = FindNearestPort(sdl, otherDeviceName, otherBoardName, otherPortName, fliter);
+                }
+                else
+                {
+                    res = new Tuple<string, string, string>(otherDeviceName, otherBoardName, otherPortName);
+                }
+                if (res != null && res.Item1 != "" && res.Item2 != "" && res.Item3 != "")
+                {
+                    return res;
+                }
+            }
+            return new Tuple<string, string, string>("", "", "");
         }
     }
 }

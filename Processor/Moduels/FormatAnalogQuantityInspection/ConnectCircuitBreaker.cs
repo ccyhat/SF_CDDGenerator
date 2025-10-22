@@ -4,12 +4,14 @@ using SFTemplateGenerator.Processor.Interfaces;
 using SFTemplateGenerator.Processor.Interfaces.FormatAnalogQuantityInspection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Windows.Documents;
 namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 {
 
     public class ConnectCircuitBreaker : IConnectCircuitBreaker
     {
         private static readonly Regex OPBOX_REGEX = new Regex(@"^(\d-)?4n$");
+        private static readonly Regex REGEX_OPBOX_Dese = new Regex(@"^组合操作箱$");
         /// <summary>
         /// 跳闸
         /// </summary>       
@@ -17,6 +19,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
              new Regex (@"^至跳闸线圈$"),
              new Regex (@"^(\d)?TQ[abc]$"),
         };
+     
         /// <summary>
         /// 跳闸监视
         /// </summary>
@@ -39,6 +42,33 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private static readonly List<Regex> CLOSE_MONITORING_REGEX = new List<Regex>() {
              new Regex (@"^断路器合位监视$"),
              new Regex (@"^(\d)?HW[abc]$"),
+        };
+        /// <summary>
+        /// 跳闸
+        /// </summary>       
+        private static readonly List<Regex> SEPARATED_TRIP_REGEX = new List<Regex>() {
+             new Regex (@"^(\d)?TQ$"),
+        };
+
+        /// <summary>
+        /// 跳闸监视
+        /// </summary>
+        private static readonly List<Regex> SEPARATED_TRIP_MONITORING_REGEX = new List<Regex>() {
+            new Regex (@"^(\d)?TW-$"),
+
+        };
+        /// <summary>
+        /// 合闸
+        /// </summary>
+        private static readonly List<Regex> SEPARATED_CLOSE_REGEX = new List<Regex>() {
+            new Regex (@"^(\d)?HQ$"),
+
+        };
+        /// <summary>
+        /// 合闸监视
+        /// </summary>
+        private static readonly List<Regex> SEPARATED_CLOSE_MONITORING_REGEX = new List<Regex>() {
+             new Regex (@"^(\d)?HW-$"),
         };
         /// <summary>
         /// 4Q*D正规
@@ -68,10 +98,22 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         public Task ConnectCircuitBreakerAsync(SDL sdl, Items root)
         {
             StringBuilder sb = new StringBuilder();
-            //跳闸
-            AppendConnectionInfo(TRIP_REGEX, CLOSE_MONITORING_REGEX, sdl, sb);
-            //合闸
-            AppendConnectionInfo(CLOSE_REGEX, TRIP_MONITORING_REGEX, sdl, sb);
+            var opbox = sdl.Cubicle.Devices.FirstOrDefault(D => OPBOX_REGEX.IsMatch(D.Name));
+            if (opbox != null && REGEX_OPBOX_Dese.IsMatch(opbox.Desc))
+            {
+                //跳闸
+                AppendConnectionInfo(opbox, SEPARATED_TRIP_REGEX, SEPARATED_CLOSE_MONITORING_REGEX, sdl, sb);
+                //合闸
+                AppendConnectionInfo(opbox, SEPARATED_CLOSE_REGEX, SEPARATED_TRIP_MONITORING_REGEX, sdl, sb);
+            }
+            else
+            {
+                //跳闸
+                AppendConnectionInfo( TRIP_REGEX, CLOSE_MONITORING_REGEX, sdl, sb);
+                //合闸
+                AppendConnectionInfo( CLOSE_REGEX, TRIP_MONITORING_REGEX, sdl, sb);
+            }
+           
             //公共端
             var devices = sdl.Cubicle.Devices.Where(D => QBDREGEX.Any(R => R.IsMatch(D.Name))).ToList();
             foreach (var device in devices)
@@ -117,21 +159,19 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 
         private void AppendConnectionInfo(List<Regex> mainRegex, List<Regex> monitorRegex, SDL sdl, StringBuilder sb)
         {
-            var devices = sdl.Cubicle.Devices.Where(D => OPBOX_REGEX.IsMatch(D.Name)).ToList();
-            foreach (var device in devices)
+            var opbox = sdl.Cubicle.Devices.FirstOrDefault(D => OPBOX_REGEX.IsMatch(D.Name));
+            if (opbox != null)
             {
-                var boards = device.Boards.ToList();
-                foreach (var board in boards)
+                foreach (var board in opbox.Boards.ToList())
                 {
                     var portPairs = GetPortPairs(board, mainRegex, monitorRegex);
                     foreach (var (main_port, monitor_port) in portPairs)
                     {
-                        ProcessPortPair(sdl, device, board, main_port, monitor_port, sb);
+                        ProcessPortPair(sdl, opbox, board, main_port, monitor_port, sb);
                     }
                 }
             }
-
-
+          
             foreach (var board in _targetDeviceKeeper.TargetDevice.Boards.ToList())
             {
                 var portPairs = GetPortPairs(board, mainRegex, monitorRegex);
@@ -140,6 +180,24 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     ProcessPortPair(sdl, _targetDeviceKeeper.TargetDevice, board, main_port, monitor_port, sb);
                 }
             }
+        }
+        private void AppendConnectionInfo(Device opbox, List<Regex> mainRegex, List<Regex> monitorRegex, SDL sdl, StringBuilder sb)
+        {
+            List<string> Phase= new List<string>() { "a", "b", "c" };
+            var boards = opbox.Boards.ToList();
+            List<(Port,Port,Board)> portMessage = new();
+            foreach (var board in boards)
+            {
+                var portPairs=GetPortPairs(board, mainRegex, monitorRegex);
+                if (portPairs.Any())
+                {
+                    portMessage.AddRange(portPairs.Select(p => (p.main_port, p.monitor_port, board)));
+                }          
+            }
+            for(int i = 0; i < portMessage.Count; i++)
+            {
+                ProcessPortPair(sdl, opbox, portMessage[i].Item3, portMessage[i].Item1, portMessage[i].Item2, sb, Phase[i]);
+            }          
         }
 
         private List<(Port main_port, Port monitor_port)> GetPortPairs(Board board, List<Regex> mainRegex, List<Regex> monitorRegex)
@@ -181,6 +239,36 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 var main = FindNearestPort(main_line);
                 var monitor = FindNearestPort(monitor_line);
                 var Decs = BreakerMatcher.GetNotShortCircuitedDesc(main_port.Desc);
+                sb.Append($"{main.Item1}{main.Item2}和{monitor.Item2}短连接{Decs}");
+                sb.Append(".  ");
+            }
+        }
+        private void ProcessPortPair(SDL sdl, Device device, Board board, Port main_port, Port monitor_port, StringBuilder sb,string Phase)
+        {
+            var main_totalLines = new List<List<Core>>();
+            GetAllLines(sdl, device, board, main_port, new List<Core>(), main_totalLines);
+            var monitor_totalLines = new List<List<Core>>();
+            GetAllLines(sdl, device, board, monitor_port, new List<Core>(), monitor_totalLines);
+            List<Core> main_line = new List<Core>();
+            GetTargetLine(main_totalLines, main_line);
+            List<Core> monitor_line = new List<Core>();
+            GetTargetLine(monitor_totalLines, monitor_line);
+            if (main_line.Count == 0 || monitor_line.Count == 0)
+            {
+                return;
+            }
+            if (IsConnectedToIED(main_line) && IsConnectedToIED(monitor_line))
+            {
+                var main = FindNearestPort(main_line);
+                var Decs = BreakerMatcher.GetShortCircuitedDesc(main_port.Desc + Phase);
+                sb.Append($"{main.Item1}{main.Item2}接{Decs}");
+                sb.Append(".  ");
+            }
+            else
+            {
+                var main = FindNearestPort(main_line);
+                var monitor = FindNearestPort(monitor_line);
+                var Decs = BreakerMatcher.GetNotShortCircuitedDesc(main_port.Desc+ Phase);
                 sb.Append($"{main.Item1}{main.Item2}和{monitor.Item2}短连接{Decs}");
                 sb.Append(".  ");
             }

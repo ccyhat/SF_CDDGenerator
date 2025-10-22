@@ -5,6 +5,7 @@ using SFTemplateGenerator.Processor.Interfaces;
 using SFTemplateGenerator.Processor.Interfaces.FormatAnalogQuantityInspection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Linq;
 using static SFTemplateGenerator.Helper.Constants.CDDRegex;
 using static SFTemplateGenerator.Helper.Paths.PathSaver;
 using static SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection.FormatAnalogQuantityInspection;
@@ -20,7 +21,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private readonly IZeroSequenceVoltageCurrentTest _zeroSequenceVoltageCurrentTest;
         private readonly ISwitchTest_dsAnAin _switchTest_DsAnAin;
         //开关量正则表达式
-        private static readonly Regex REGEX_HIGHVOLTAGE= new Regex(@"(h|g|m|l|p)", RegexOptions.IgnoreCase);
+        private static readonly Regex REGEX_HIGHVOLTAGE= new Regex(@"(h|g|m|l|p|r)", RegexOptions.IgnoreCase);
         private static readonly List<Regex> REGEX_ACPORTS = new List<Regex> { 
             new Regex(@"^(U|3U|I|3I)([abcnx0j])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
             new Regex(@$"^(U|3U|I|3I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([abcnx0j])[\`\']?$", RegexOptions.IgnoreCase),
@@ -83,15 +84,17 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             _switchTest_DsAnAin = switchTest_DsAnAin;
             _zeroSequenceVoltageCurrentTest = zeroSequenceVoltageCurrentTest;
         }
+
         public Task VoltageCheckProcess(SDL sdl, Items root, List<string> _nodename)
         {
             //获取交流插件
             var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => ACBORAD_REGEX.IsMatch(B.Desc)).OrderBy(B => B.Desc).ToList();
             Dictionary<string, ACDeviceUint> dictionary = new Dictionary<string, ACDeviceUint>();
+            var dic_flag=GetDescListResult(boards);
             //循环添加
             for (int i = 0; i < boards.Count(); i++)
             {
-                var items = GetInfo(sdl, _targetDeviceKeeper.TargetDevice, boards[i]);
+                var items = GetInfo(sdl, _targetDeviceKeeper.TargetDevice, boards[i], dic_flag);
                 foreach (var item in items)
                 {
                     if(dictionary.ContainsKey(item.Key))
@@ -108,7 +111,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             if (dictionary.Count() == 0)
             {
                 Logger.Info($"没有交流线，跳过电压检查");
-
             }
             else
             {
@@ -147,7 +149,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             return Task.CompletedTask;
         }
-        private Dictionary<string, ACDeviceUint> GetInfo(SDL sdl, Device target, Board board)
+        private Dictionary<string, ACDeviceUint> GetInfo(SDL sdl, Device target, Board board, Dictionary<string, bool> flag)
         {
             // 预先缓存 Ports，避免多次遍历
             var ports = board.Ports;
@@ -156,20 +158,50 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             foreach (var p in ports)
             {
                 Match match = REGEX_ACPORTS.Select(r => r.Match(p.Desc)).FirstOrDefault(m => m.Success)!;
-               
                 // 按顺序尝试匹配
                 if (match != null && match.Success)
                 {
                     // 提取尾号
                     string tailStr = match.Groups[3].Value;
-                    string tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
-                    
-                    string tailStr1 = match.Groups[2].Value;
+                    string tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;                    
+                    string tailStr1 = match.Groups[1].Value +match.Groups[2].Value;
                     if( REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
                     {
                         tailNumber = tailStr1 + tailNumber;
                     }
-
+                    if (flag.ContainsKey(tailNumber))
+                    {
+                        if (flag[tailNumber])
+                        {
+                            tailStr = match.Groups[3].Value;
+                            tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : (int.Parse(tailStr) + 1).ToString(); ;
+                            tailStr1 = match.Groups[2].Value;
+                            if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
+                            {
+                                tailNumber = tailStr1 + tailNumber;
+                            }
+                        }
+                        else
+                        {
+                            tailStr = match.Groups[3].Value;
+                            tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
+                            tailStr1 = match.Groups[2].Value;
+                            if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
+                            {
+                                tailNumber = tailStr1 + tailNumber;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        tailStr = match.Groups[3].Value;
+                        tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
+                        tailStr1 = match.Groups[2].Value;
+                        if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
+                        {
+                            tailNumber = tailStr1 + tailNumber;
+                        }
+                    }
                     // 检查字典中是否已存在该尾号的键
                     if (!groupedByTail.ContainsKey(tailNumber))
                     {
@@ -635,5 +667,74 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             var datset = ldevice.Datasets.FirstOrDefault(D => D.Name == "测量量");
             return datset != null && datset.Datas.Count > 0;
         }
+        private Dictionary<string, bool> GetDescListResult(List<Board> boards)
+        {
+            var Desc_list = new List<string>();
+            foreach (var board in boards)
+            {
+                foreach (var port in board.Ports)
+                {
+                    var regexs = REGEX_Uabc.Concat(REGEX_Iabc).Concat(REGEX_Uabc_hat).Concat(REGEX_Iabc_hat);
+                    if (regexs.Any(R => R.IsMatch(port.Desc)))
+                    {
+                        Match match = REGEX_ACPORTS.Select(r => r.Match(port.Desc)).FirstOrDefault(m => m.Success)!;
+                        if (match != null && match.Success)
+                        {
+                            string tailStr = match.Groups[3].Value;
+                            string tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;
+
+                            string tailStr1 = match.Groups[1].Value + match.Groups[2].Value + tailNumber;
+                            if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
+                            {
+                                tailNumber = match.Groups[1].Value + match.Groups[2].Value + tailNumber;
+                            }
+                            else
+                            {
+                                tailNumber = match.Groups[1].Value  + tailNumber;
+                            }
+                            if (Desc_list.Contains(tailNumber))
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                Desc_list.Add(tailNumber);
+                            }
+                        }
+                    }
+                }
+            }
+            foreach(var decs in Desc_list)
+            {
+                Regex reg = new Regex(@$"(U|3U|I|3I){REGEX_HIGHVOLTAGE}?(\d{{0,2}})");
+                var res = reg.Match(decs);
+            }
+            var categoryResult = Desc_list
+                .GroupBy(elem => {
+                    Regex reg = new Regex(@$"(U|3U|I|3I){REGEX_HIGHVOLTAGE}?(\d{{0,2}})");
+                    var res=reg.Match(elem);
+                    if (string.IsNullOrEmpty(res.Groups[2].Value))
+                    {
+                        return res.Groups[1].Value+ res.Groups[3].Value;
+                    }
+                    else {
+                        return res.Groups[1].Value + res.Groups[2].Value + res.Groups[3].Value;
+                    }
+                }
+                )
+                .ToDictionary(
+                    group => group.Key,
+                    group => (
+                        Elements: group.ToList(),
+                        HasZero: group.Any(elem => elem.Contains("0"))
+                    )
+                );
+            Dictionary<string, bool> result = categoryResult
+                .SelectMany(cat => cat.Value.Elements.Select(elem => new { elem, cat.Value.HasZero }))
+                .ToDictionary(item => item.elem, item => item.HasZero);
+
+            return result;
+        }
+       
     }
 }

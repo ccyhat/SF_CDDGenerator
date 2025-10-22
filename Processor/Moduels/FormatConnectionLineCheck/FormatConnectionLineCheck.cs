@@ -10,7 +10,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatConnectionLineCheck
         private static readonly List<Regex> REGEX_TD = new List<Regex>()
         {
             new Regex(@"(\d)?Q(\d)?D"),
-            new Regex(@"UD"),
+            new Regex(@"(\d)?U(\d)?D"),
             new Regex(@"ZD"),
             new Regex(@"GD"),
             new Regex(@"ID"),

@@ -5,10 +5,12 @@
         public static readonly Dictionary<string, string> notShortCircuited = new Dictionary<string, string>
     {
         // 可以在这里初始化字典内容
-        {"HQa", "A相合闸"},
+        {"HQa", "A相合闸"},        
         {"HQb", "B相合闸"},
         {"HQc", "C相合闸"},
-
+        {"TQa", "A项跳闸"},
+        {"TQb", "B项跳闸"},
+        {"TQc", "C项跳闸"},
 
     };
         public static readonly Dictionary<string, string> isShortCircuited = new Dictionary<string, string>
