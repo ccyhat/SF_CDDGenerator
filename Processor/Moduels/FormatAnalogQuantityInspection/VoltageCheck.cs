@@ -84,7 +84,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             _switchTest_DsAnAin = switchTest_DsAnAin;
             _zeroSequenceVoltageCurrentTest = zeroSequenceVoltageCurrentTest;
         }
-
         public Task VoltageCheckProcess(SDL sdl, Items root, List<string> _nodename)
         {
             //获取交流插件
@@ -578,7 +577,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 }
                 if (info.Group5 != null && info.Group5.Count() > 0)
                 {
-                    sb.Append("  IJ接");
+                    sb.Append("  Ij接");
                     string deviceName = "";
                     for (int i = 0; i < info.Group5.Count(); i++)
                     {
