@@ -514,7 +514,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                         CommCMD.CMD.Value.FirstOrDefault().Value = "0";
                     }
                 }
-
                 rootItem.ItemList.Add(item);
                 _nodename.Add(item.Name);
             }
@@ -569,7 +568,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                 var safety = item.GetSafetys().FirstOrDefault(p => p.Name == "提示接入表笔");
                 if (safety != null)
                 {
-
                     var speakStrings = $"调试人员自测{source.Item3}";
                     item.Name = $"调试人员自测：{source.Item3}";
                     safety.Name = $"{source.Item3}测试";
@@ -801,8 +799,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
 
             }
             foreach (var line in lines)
-            {
-                
+            {               
                 foreach (var core in line)
                 {
                     var deviceA = _sDLKeeper.SDL.Cubicle.Devices.FirstOrDefault(d => d.Name == core.DeviceA);
