@@ -9,7 +9,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPrepareTestProcessor
 {
     public class CheckTerminalConnector : ICheckTerminalConnector
     {
-        private const int SIZE = 240;
+        private const int SIZE = 256;
         public Task CheckTerminalConnectorAsync(SDL sdl, Items root)
         {
             var tdDevices = sdl.Cubicle.Devices.Where(D => D.Class == "TD").ToList();

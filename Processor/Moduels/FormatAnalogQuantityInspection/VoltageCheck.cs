@@ -107,6 +107,27 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     }                   
                 }
             }
+            // 用更紧凑的方式按“前缀首次出现顺序 + 数字升序”排序字典
+            var keyRegex = new Regex(@"^([A-Za-z]*)(\d+)$");
+            var prefixOrder = new List<string>();
+
+            var parsed = dictionary.Keys.Select(k =>
+            {
+                var m = keyRegex.Match(k);
+                var prefix = m.Success ? m.Groups[1].Value : "";
+                var num = m.Success && int.TryParse(m.Groups[2].Value, out var n) ? n : int.MaxValue;
+                if (!prefixOrder.Contains(prefix)) prefixOrder.Add(prefix); // 记录首次出现顺序
+                return new { Key = k, Prefix = prefix, Number = num };
+            }).ToList();
+
+            var sortedKeys = parsed
+                .OrderBy(p => prefixOrder.IndexOf(p.Prefix))
+                .ThenBy(p => p.Number)
+                .Select(p => p.Key)
+                .ToList();
+
+            dictionary = sortedKeys.ToDictionary(k => k, k => dictionary[k]);
+
             if (dictionary.Count() == 0)
             {
                 Logger.Info($"没有交流线，跳过电压检查");
@@ -689,7 +710,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             }
                             else
                             {
-                                tailNumber = match.Groups[1].Value  + tailNumber;
+                                tailNumber = match.Groups[1].Value + tailNumber;
                             }
                             if (Desc_list.Contains(tailNumber))
                             {
@@ -703,37 +724,22 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     }
                 }
             }
-            foreach(var decs in Desc_list)
-            {
-                Regex reg = new Regex(@$"(U|3U|I|3I){REGEX_HIGHVOLTAGE}?(\d{{0,2}})");
-                var res = reg.Match(decs);
-            }
-            var categoryResult = Desc_list
-                .GroupBy(elem => {
-                    Regex reg = new Regex(@$"(U|3U|I|3I){REGEX_HIGHVOLTAGE}?(\d{{0,2}})");
-                    var res=reg.Match(elem);
-                    if (string.IsNullOrEmpty(res.Groups[2].Value))
-                    {
-                        return res.Groups[1].Value+ res.Groups[3].Value;
-                    }
-                    else {
-                        return res.Groups[1].Value + res.Groups[2].Value + res.Groups[3].Value;
-                    }
-                }
-                )
-                .ToDictionary(
-                    group => group.Key,
-                    group => (
-                        Elements: group.ToList(),
-                        HasZero: group.Any(elem => elem.Contains("0"))
-                    )
-                );
-            Dictionary<string, bool> result = categoryResult
-                .SelectMany(cat => cat.Value.Elements.Select(elem => new { elem, cat.Value.HasZero }))
-                .ToDictionary(item => item.elem, item => item.HasZero);
 
-            return result;
+            var categoryResult = Desc_list
+                .GroupBy(elem =>
+                {
+                    Regex reg = new Regex(@$"(U|3U|I|3I){REGEX_HIGHVOLTAGE}?(\d{{0,2}})");
+                    var res = reg.Match(elem);
+                    return res.Groups[1].Value + res.Groups[2].Value;
+                }
+                ).SelectMany(group => group.Select(item => new
+                {
+                    item,
+                    hasZero = group.Any(elem => elem.Contains("0"))
+                }))
+             .ToDictionary(x => x.item, x => x.hasZero);
+            return categoryResult;
         }
-       
+
     }
 }

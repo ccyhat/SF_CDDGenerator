@@ -252,6 +252,26 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                                 count++;
                             }
                         }
+                        if (info.Value.Group4 != null && info.Value.Group4.Count > 0)
+                        {
+                            foreach (var item in info.Value.Group4.GetRange(0, 1))
+                            {
+                                var source = GetBoardPort(item);
+                                var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, vg_U1VErrorAbs, -1); ");
+                                count++;
+                            }
+                        }
+                        if (info.Value.Group5 != null && info.Value.Group5.Count > 0)
+                        {
+                            foreach (var item in info.Value.Group5.GetRange(0, 1))
+                            {
+                                var source = GetBoardPort(item);
+                                var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, vg_U1VErrorAbs, -1); ");
+                                count++;
+                            }
+                        }
                     }
 
                     sb.AppendLine();
@@ -584,6 +604,26 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                                 var source = GetBoardPort(item);
                                 var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
                                 sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[i]}, -1, vg_MRIErrorRel); ");
+                                count++;
+                            }
+                        }
+                        if (info.Value.Group4 != null && info.Value.Group4.Count > 0)
+                        {
+                            foreach (var item in info.Value.Group4.GetRange(0, 1))
+                            {
+                                var source = GetBoardPort(item);
+                                var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, vg_U1VErrorAbs, -1); ");
+                                count++;
+                            }
+                        }
+                        if (info.Value.Group5 != null && info.Value.Group5.Count > 0)
+                        {
+                            foreach (var item in info.Value.Group5.GetRange(0, 1))
+                            {
+                                var source = GetBoardPort(item);
+                                var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, vg_U1VErrorAbs, -1); ");
                                 count++;
                             }
                         }

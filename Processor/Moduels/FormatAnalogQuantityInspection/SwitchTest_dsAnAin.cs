@@ -250,6 +250,28 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                                 count += 2;
                             }
                         }
+                        if (info.Value.Group4 != null && info.Value.Group4.Count > 0)
+                        {
+                            foreach (var item in info.Value.Group4.GetRange(0, 1))
+                            {
+                                var source = GetBoardPort(item);
+                                var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, -1, vg_MRIErrorRel); ");
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[0]}, vg_MRIAngErrorAbs, -1); ");
+                                count += 2;
+                            }
+                        }
+                        if (info.Value.Group5 != null && info.Value.Group5.Count > 0)
+                        {
+                            foreach (var item in info.Value.Group5.GetRange(0, 1))
+                            {
+                                var source = GetBoardPort(item);
+                                var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, -1, vg_MRIErrorRel); ");
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[1]}, vg_MRIAngErrorAbs, -1); ");
+                                count += 2;
+                            }
+                        }
                     }
                     sb.AppendLine();
                     sb.Append($@"if(nRsltJdg=={count}) then");
@@ -565,6 +587,28 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                                 var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
                                 sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[i]}, -1, vg_MRIErrorRel); ");
                                 sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[i]}, vg_MRIAngErrorAbs, -1); ");
+                                count += 2;
+                            }
+                        }
+                        if (info.Value.Group4 != null && info.Value.Group4.Count > 0)
+                        {
+                            foreach (var item in info.Value.Group4.GetRange(0, 1))
+                            {
+                                var source = GetBoardPort(item);
+                                var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, -1, vg_MRIErrorRel); ");
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[0]}, vg_MRIAngErrorAbs, -1); ");
+                                count += 2;
+                            }
+                        }
+                        if (info.Value.Group5 != null && info.Value.Group5.Count > 0)
+                        {
+                            foreach (var item in info.Value.Group5.GetRange(0, 1))
+                            {
+                                var source = GetBoardPort(item);
+                                var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, -1, vg_MRIErrorRel); ");
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[1]}, vg_MRIAngErrorAbs, -1); ");
                                 count += 2;
                             }
                         }

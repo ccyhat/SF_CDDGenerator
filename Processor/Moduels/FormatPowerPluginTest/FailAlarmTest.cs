@@ -185,7 +185,19 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
                 AnotherBoard = core.BoardA;
                 AnotherPort = core.PortA;
             }
+            //检查下一个是不是短连片
+            var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == AnotherDevice)!;
+            if (device.Class.Equals("YB"))
+            {
 
+
+                if (int.TryParse(AnotherPort, out int portANumber))
+                {
+                    AnotherPort = (portANumber - 1).ToString();
+                }
+
+
+            }
 
             Tuple<string, string, string> tuple = new Tuple<string, string, string>(AnotherDevice, AnotherBoard, AnotherPort);
             return tuple;

@@ -28,7 +28,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             _targetDeviceKeeper = targetDeviceKeeper;
             _deviceModelKeeper = deviceModelKeeper;
         }
-        // private List<ItemBase> newitems = new List<ItemBase>();
         public Task ZeroSequenceVoltageCurrentProcess(SDL sdl, Items root, KeyValuePair<string, ACDeviceUint> info, TESTER mode)
         {
             if (mode == TESTER.PONOVOTester || mode == TESTER.PONOVOStandardSource)

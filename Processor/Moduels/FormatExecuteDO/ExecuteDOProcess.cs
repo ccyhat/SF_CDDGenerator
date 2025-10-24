@@ -1,4 +1,5 @@
 ﻿
+using Castle.Components.DictionaryAdapter.Xml;
 using SFTemplateGenerator.Helper.Shares.GuideBook;
 using SFTemplateGenerator.Helper.Shares.SDL;
 using SFTemplateGenerator.Processor.Interfaces;
@@ -29,7 +30,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         };
         private readonly List<Regex> REGEX_DOUBLE_YB = new List<Regex> {
             new Regex(@"^智能切换片"),
+            new Regex(@"^连接片_XH76W4T-DKZ_红色_常州洛阳华泰$"),
         };
+        private readonly Regex REGEX_4QD = new Regex(@"4Q(\d)?D");
+        private readonly Regex REGEX_4YD = new Regex(@"4Y(\d)?D");
         private List<string> _nodename = new List<string>();//存储节点名称
         public ExecuteDOProcess(
             ITargetDeviceKeeper targetDeviceKeeper,
@@ -97,7 +101,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         private void SeperateDOObject(List<DODeviceEnd> doDeviceEnds, Items rootItem)
         {
             foreach (var dODeviceEnd in doDeviceEnds)
-            {               
+            {
                 if (REGEX_DOOthers.Any(R => R.IsMatch(dODeviceEnd.StartPort.Item3.Desc)))
                 {
                     Create_DO_By_Des(doDeviceEnds, rootItem);
@@ -577,53 +581,37 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         }
         private void CreateYBD(Items rootItem)
         {
-            var REGEX_YBDCOMM = new List<Regex>() { new Regex(@"公共端"), };
-            var CommPort = new Tuple<string, string>("", "");
-            var YBDdevice = _sDLKeeper.SDL.Cubicle.Devices.FirstOrDefault(D => D.Name.Equals("YBD"));
-            if (YBDdevice != null)
+            var sdl = _sDLKeeper.SDL;
+            var double_ybs=_sDLKeeper.SDL.Cubicle.Devices.Where(D => REGEX_DOUBLE_YB.Any(R=>R.IsMatch(D.Desc)));
+            foreach(var double_yb in double_ybs)
             {
-                var CommBoard = YBDdevice.Boards.FirstOrDefault(B => REGEX_YBDCOMM.Any(R => R.IsMatch(B.Desc)));
-                if (CommBoard != null)
+                var tuple1 = FindNearestPort(sdl, double_yb.Name, "", "3", new List<Core>());
+                var tuple2 = FindNearestPort(sdl, double_yb.Name, "", "4", new List<Core>());
+                var item = rootItem.GetItems().FirstOrDefault(p => p.Name == @"双层压板测试").Clone();
+                if (item != null)
                 {
-                    CommPort = new Tuple<string, string>(YBDdevice.Name, CommBoard.Name);
-                }
-                var YBDboards = YBDdevice.Boards.Where(B => !REGEX_YBDCOMM.Any(R => R.IsMatch(B.Desc)) && B.Desc != string.Empty);
-                foreach (var YBDboard in YBDboards)
-                {
-                    var yb = FindNearestPort(_sDLKeeper.SDL, YBDdevice, YBDboard, YBDboard.Ports.FirstOrDefault());
-                    var device = _sDLKeeper.SDL.Cubicle.Devices.FirstOrDefault(d => d.Name == yb.Item1);
-                    if (device != null)
+                    item.Name = $"{double_yb.Name}双层压板测试";
+                    item.OrderNum = 3;
                     {
-                        if (REGEX_DOUBLE_YB.Any(R => R.IsMatch(device.Desc)))
+                        var safety = item.GetSafetys().FirstOrDefault(p => p.Name == "提示接入表笔");
+                        if (safety != null)
                         {
-                            var item = rootItem.GetItems().FirstOrDefault(p => p.Name == @"双层压板测试").Clone();
-                            if (item != null)
-                            {
-                                item.Name = $"{yb.Item1}双层压板测试";
-                                item.OrderNum = 3;
-                                {
-                                    var safety = item.GetSafetys().FirstOrDefault(p => p.Name == "提示接入表笔");
-                                    if (safety != null)
-                                    {
-                                        var speakStrings = $"打开{yb.Item1}, 量{CommPort.Item1}{CommPort.Item2}和{YBDdevice.Name}{YBDboard.Name}";
-                                        safety.Name = $"{speakStrings}";
-                                        safety.DllCall.CData = $"SpeakString={speakStrings};ExpectString=是否完成;";
-                                    }
-                                }
-                                {
-                                    var safety = item.GetSafetys().FirstOrDefault(p => p.Name == "提示接入表笔1");
-                                    if (safety != null)
-                                    {
-                                        var speakStrings = $"闭合{yb.Item1}";
-                                        safety.Name = $"{speakStrings}";
-                                        safety.DllCall.CData = $"SpeakString={speakStrings};ExpectString=是否完成;";
-                                    }
-                                }
-                                rootItem.ItemList.Add(item);
-                                _nodename.Add(item.Name);
-                            }
+                            var speakStrings = $"打开{double_yb.Name}, 量{tuple1.Item1}{tuple1.Item2}和{tuple2.Item1}{tuple2.Item2}";
+                            safety.Name = $"{speakStrings}";
+                            safety.DllCall.CData = $"SpeakString={speakStrings};ExpectString=是否完成;";
                         }
                     }
+                    {
+                        var safety = item.GetSafetys().FirstOrDefault(p => p.Name == "提示接入表笔1");
+                        if (safety != null)
+                        {
+                            var speakStrings = $"闭合{double_yb.Name}";
+                            safety.Name = $"{speakStrings}";
+                            safety.DllCall.CData = $"SpeakString={speakStrings};ExpectString=是否完成;";
+                        }
+                    }
+                    rootItem.ItemList.Add(item);
+                    _nodename.Add(item.Name);
                 }
             }
         }
@@ -805,6 +793,16 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         {
             foreach (var line in lines)
             {
+           
+                if(line.Any(C=>REGEX_4QD.IsMatch(C.DeviceA)|| REGEX_4QD.IsMatch(C.DeviceB)|| REGEX_4YD.IsMatch(C.DeviceA) || REGEX_4YD.IsMatch(C.DeviceB)) )
+                {
+                    return line;
+                }
+
+            }
+            foreach (var line in lines)
+            {
+                
                 foreach (var core in line)
                 {
                     var deviceA = _sDLKeeper.SDL.Cubicle.Devices.FirstOrDefault(d => d.Name == core.DeviceA);
@@ -826,7 +824,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         }
         private Tuple<string, string, string> FindNearestPort(SDL sdl, Device device, Board board, Port port)
         {
-            return FindNearestPort(sdl, device.Name, board.Name, port.Name, new List<Core>());
+            return FindNearestPort(sdl, device.Name, board.Name, port.Name);
         }
         private Tuple<string, string, string> FindNearestPort(SDL sdl, string device, string board, string port,List<Core> fliter)
         {
@@ -855,6 +853,22 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                     return res;
                 }                                           
             }        
+            return new Tuple<string, string, string>("", "", "");
+        }
+        private Tuple<string, string, string> FindNearestPort(SDL sdl, string device, string board, string port)
+        {
+            var core = sdl.Cubicle.Cores.FirstOrDefault(C =>
+               (C.DeviceA == device && C.BoardA == board && C.PortA == port) ||
+               (C.DeviceB == device && C.BoardB == board && C.PortB == port)
+               );
+           if(core != null)
+            {
+                var otherDeviceName = core.DeviceA == device ? core.DeviceB : core.DeviceA;
+                var otherBoardName = core.BoardA == board ? core.BoardB : core.BoardA;
+                var otherPortName = core.PortA == port ? core.PortB : core.PortA;
+                var otherDevice = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == otherDeviceName);
+                return new Tuple<string, string, string>(otherDeviceName, otherBoardName, otherPortName);
+            }                                     
             return new Tuple<string, string, string>("", "", "");
         }
     }

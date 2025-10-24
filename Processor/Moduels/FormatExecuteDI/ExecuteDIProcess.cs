@@ -50,6 +50,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
         };
         List<Regex> REGEX_MAINTENANCE = new(){
             new Regex(@"^保护检修状态$"),
+            new Regex(@"^保护检修$"),           
             new Regex(@"^检修\+$"),
             new Regex(@"^检修状态$"),
         };
@@ -136,7 +137,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             RemoveMaintenance(DIObjectList);
             RemoveNoConnection(DIObjectList);
             var EX_boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => EXBORAD_REGEX.IsMatch(B.Desc)).ToList();
-            if (EX_boards != null)
+            if (EX_boards.Any())
             {
                 foreach (var pos in ExtensionBoardMatcher.SwitchPosition)
                 {
