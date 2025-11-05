@@ -103,7 +103,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         {
 
             //获取交流插件
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => ACBORAD_REGEX.IsMatch(B.Desc)).OrderBy(B => B.Desc).ToList();        
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => ACBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).OrderBy(B => B.Desc).ToList();        
             Dictionary<string, ACDeviceUint> dictionary = new Dictionary<string, ACDeviceUint>();
             var dic_flag = GetDescListResult(boards);
             //循环添加

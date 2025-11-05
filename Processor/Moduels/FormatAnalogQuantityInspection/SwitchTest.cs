@@ -106,7 +106,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             {
                 res = TWOKK(target, info);
             }
-
             int cpuCount = _deviceModelKeeper.TargetDeviceModel.LDevices
                 .Count(LD => LD.Name.StartsWith("CPU")); // 简化了CPU计数逻辑
             int order = 0;

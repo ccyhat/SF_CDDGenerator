@@ -23,7 +23,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         //开关量正则表达式
         private static readonly Regex REGEX_HIGHVOLTAGE= new Regex(@"(h|g|m|l|p|r)", RegexOptions.IgnoreCase);
         private static readonly List<Regex> REGEX_ACPORTS = new List<Regex> { 
-            new Regex(@"^(U|3U|I|3I)([abcnx0j])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U|3U|I|3I)([abcnx0jl])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
             new Regex(@$"^(U|3U|I|3I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([abcnx0j])[\`\']?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Uabc = new List<Regex> { 
@@ -39,7 +39,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             new Regex(@$"^(U){REGEX_HIGHVOLTAGE}(\d{{0,2}})([c])[\`\']$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Ux = new List<Regex> { 
-            new Regex(@"^(3U|U)([0x])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(3U|U)([0xl])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
             new Regex(@$"^(3U|U){REGEX_HIGHVOLTAGE}(\d{{0,2}})([0x])[\`\']?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Iabc = new List<Regex> {
@@ -87,7 +87,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         public Task VoltageCheckProcess(SDL sdl, Items root, List<string> _nodename)
         {
             //获取交流插件
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => ACBORAD_REGEX.IsMatch(B.Desc)).OrderBy(B => B.Desc).ToList();
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => ACBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).OrderBy(B => B.Desc).ToList();
             Dictionary<string, ACDeviceUint> dictionary = new Dictionary<string, ACDeviceUint>();
             var dic_flag=GetDescListResult(boards);
             //循环添加
@@ -185,7 +185,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     string tailStr = match.Groups[3].Value;
                     string tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;                    
                     string tailStr1 = match.Groups[1].Value +match.Groups[2].Value;
-                    if( REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
+                    if( REGEX_HIGHVOLTAGE.IsMatch(tailStr1)&& match.Groups.Count==5)
                     {
                         tailNumber = tailStr1 + tailNumber;
                     }
@@ -196,7 +196,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             tailStr = match.Groups[3].Value;
                             tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : (int.Parse(tailStr) + 1).ToString(); ;
                             tailStr1 = match.Groups[2].Value;
-                            if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
+                            if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1) && match.Groups.Count == 5)
                             {
                                 tailNumber = tailStr1 + tailNumber;
                             }
@@ -206,7 +206,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             tailStr = match.Groups[3].Value;
                             tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
                             tailStr1 = match.Groups[2].Value;
-                            if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
+                            if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1) && match.Groups.Count == 5)
                             {
                                 tailNumber = tailStr1 + tailNumber;
                             }
@@ -217,7 +217,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         tailStr = match.Groups[3].Value;
                         tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
                         tailStr1 = match.Groups[2].Value;
-                        if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
+                        if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1) && match.Groups.Count == 5)
                         {
                             tailNumber = tailStr1 + tailNumber;
                         }
@@ -454,7 +454,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             if (deviceName == _targetDeviceKeeper.TargetDevice.Name)
             {
                 var board = _targetDeviceKeeper.TargetDevice.Boards.FirstOrDefault(B => B.Name.Equals(boardName));
-                if (board != null && ACBORAD_REGEX.IsMatch(board.Desc))
+                if (board != null && ACBORAD_REGEX.Any(R=>R.IsMatch(board.Desc)))
                 {
                     var port = board.Ports.FirstOrDefault(P => P.Name.Equals(portName));
                     return port != null && REGEX_Ux.Any(R => R.IsMatch(port.Desc));

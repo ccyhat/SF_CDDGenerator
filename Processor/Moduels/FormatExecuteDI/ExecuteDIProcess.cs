@@ -159,11 +159,25 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             {
                 if (REGEX_IBusbar.Any(R => R.IsMatch(dIObject.StartPort.Item3.Desc)))
                 {
-                    CreateBusbar(rootItem, dIObject, REGEX_IBusbarNO, REGEX_IBusbarNC);
+                    //确定是否使用
+                    (string device, string board, string port) startport = (dIObject.StartPort.Item1.Name, dIObject.StartPort.Item2.Name, dIObject.StartPort.Item3.Name);
+                    var cores = _sDLKeeper.SDL.Cubicle.Cores.Where(C => (C.DeviceA == startport.device && C.BoardA == startport.board && C.PortA == startport.port) ||
+                     (C.DeviceB == startport.device && C.BoardB == startport.board && C.PortB == startport.port));
+                    if (cores.Any())
+                    {
+                        CreateBusbar(rootItem, dIObject, REGEX_IBusbarNO, REGEX_IBusbarNC);
+                    }
+                   
                 }
                 if (REGEX_IIBusbar.Any(R => R.IsMatch(dIObject.StartPort.Item3.Desc)))
                 {
-                    CreateBusbar(rootItem, dIObject, REGEX_IIBusbarNO, REGEX_IIBusbarNC);
+                    (string device, string board, string port) startport = (dIObject.StartPort.Item1.Name, dIObject.StartPort.Item2.Name, dIObject.StartPort.Item3.Name);
+                    var cores = _sDLKeeper.SDL.Cubicle.Cores.Where(C => (C.DeviceA == startport.device && C.BoardA == startport.board && C.PortA == startport.port) ||
+                     (C.DeviceB == startport.device && C.BoardB == startport.board && C.PortB == startport.port));
+                    if (cores.Any())
+                    {
+                        CreateBusbar(rootItem, dIObject, REGEX_IIBusbarNO, REGEX_IIBusbarNC);
+                    }                     
                 }
             }
         }
@@ -668,7 +682,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             }
             else
             {
-                var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => POWERBORAD_REGEX.IsMatch(B.Desc)).ToList();
+                var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => POWERBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).ToList();
                 foreach (var board in boards)
                 {
                     var powerport = board.Ports.FirstOrDefault(P => REGEX_POSITIVE.Any(R => R.IsMatch(P.Desc)));

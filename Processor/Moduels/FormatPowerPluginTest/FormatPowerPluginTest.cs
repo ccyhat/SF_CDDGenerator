@@ -16,7 +16,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
         public async Task FormatPowerPluginTestAsync(Device TargetDevice, SDL sdl, GuideBook guideBook)
         {
             Logger.Info($"电源插件检查");
-            var boards = TargetDevice.Boards.Where(B => POWERBORAD_REGEX.IsMatch(B.Desc)).ToList();
+            var boards = TargetDevice.Boards.Where(B => POWERBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).ToList();
             Logger.Info($"电源插件数量：{boards.Count()}");
             if (boards.Count() == 0)
             {

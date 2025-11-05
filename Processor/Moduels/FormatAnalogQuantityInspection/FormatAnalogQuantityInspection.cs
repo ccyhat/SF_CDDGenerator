@@ -27,7 +27,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         {
 
             Logger.Info($"模拟量检查");
-            var boards = TargetDevice.Boards.Where(B => ACBORAD_REGEX.IsMatch(B.Desc)).ToList();
+            var boards = TargetDevice.Boards.Where(B => ACBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).ToList();
             Logger.Info($"交流插件数量：{boards.Count()}");
             if (boards.Count() == 0)
             {

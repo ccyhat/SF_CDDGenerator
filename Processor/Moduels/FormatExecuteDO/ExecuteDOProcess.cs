@@ -18,6 +18,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         private readonly Regex REGEX_DOObject = new Regex("(DO)_(\\d{1,2})");
         private readonly List<Regex> REGEX_DOOthers = new List<Regex> {
             new Regex(@"手合同期"),
+            new Regex(@"^断路器"),
             new Regex(@"^通道故障(\d)?$"),
             new Regex(@"^通道一告警(\d)?$"),
             new Regex(@"^通道一告警(\d)?\(常闭\)$"),
@@ -28,9 +29,11 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         private readonly List<Regex> REGEX_Air_Switch_Auxiliary_Contact = new List<Regex> {
             new Regex(@"^空开辅助接点"),
         };
-        private readonly List<Regex> REGEX_DOUBLE_YB = new List<Regex> {
-            new Regex(@"^智能切换片"),
+        private readonly List<Regex> REGEX_DOUBLE_YB_PORT1_to_PORT2 = new List<Regex> {//双层压板有两种接线在开出端子上一个是1-2，3-4。另一种是1-3，2-4。
             new Regex(@"^连接片_XH76W4T-DKZ_红色_常州洛阳华泰$"),
+        };
+        private readonly List<Regex> REGEX_DOUBLE_YB_PORT1_to_PORT3 = new List<Regex> {
+            new Regex(@"^智能切换片_RSH2\.5-2S_BXRD_瑞联$"),          
         };
         private readonly Regex REGEX_4QD = new Regex(@"4Q(\d)?D");
         private readonly Regex REGEX_4YD = new Regex(@"4Y(\d)?D");
@@ -47,7 +50,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         }
         public Task ExecuteDOProcessAsync(SDL sdl, Items rootItem, List<string> NodeName)
         {
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => DOBORAD_REGEX.IsMatch(B.Desc)|| SIGNALBORAD_REGEX.IsMatch(B.Desc) || POWERBORAD_REGEX.IsMatch(B.Desc)).ToList();//开出插件
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => DOBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))|| SIGNALBORAD_REGEX.IsMatch(B.Desc) || POWERBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).ToList();//开出插件
             Dictionary<string, List<DODeviceEnd>> DOObjectOperation = new Dictionary<string, List<DODeviceEnd>>();
             var regexMappings = new Dictionary<Regex, Dictionary<string, List<DODeviceEnd>>>
             {
@@ -132,9 +135,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             foreach (var dODeviceEnd in DOObject)
             {
                 var dOObjectPair = new DOPortPair(DOObject.FirstOrDefault(), DOObject.LastOrDefault()!);
-                if (dODeviceEnd.StartPort.Item3.Desc.Contains("手合同期"))
+                if (dODeviceEnd.StartPort.Item3.Desc.Contains("手合同期")|| dODeviceEnd.StartPort.Item3.Desc.Contains("断路器"))
                 {
-                    CreateShouHeTongQi(dOObjectPair, rootItem);
+                    CreateSelfTest(dOObjectPair, rootItem);
                     break;
                 }
                 if (dODeviceEnd.StartPort.Item3.Desc.Contains("告警"))
@@ -152,24 +155,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                     CreateLockingVoltageRegulationNC(dOObjectPair, rootItem);
                     break;
                 }
-            }
-        }
-        private void CreateShouHeTongQi(DOPortPair DOObjectPair, Items rootItem)
-        {
-            var item = rootItem.GetItems().FirstOrDefault(p => p.Name == @"调试人员自测").Clone();
-            item.OrderNum = 3;
-            if (item != null)
-            {
-                var source = GetBoard_Port_PortDesc(DOObjectPair.dODeviceEnd2);
-                var safety = item.GetSafetys().FirstOrDefault(p => p.Name == "提示接入表笔");
-                if (safety != null)
-                {
-                    var speakStrings = $"调试人员自测{source.Item3}把手测试";
-                    item.Name = $"调试人员自测：把手测试{source.Item3}";
-                    safety.DllCall.CData = $"SpeakString={source.Item3};ExpectString=是否合格;";
-                }
-                rootItem.ItemList.Add(item);
-                _nodename.Add(item.Name);
             }
         }
         private void CreateAlarm(DOPortPair DOObjectPair, Items rootItem)
@@ -580,11 +565,23 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         private void CreateYBD(Items rootItem)
         {
             var sdl = _sDLKeeper.SDL;
-            var double_ybs=_sDLKeeper.SDL.Cubicle.Devices.Where(D => REGEX_DOUBLE_YB.Any(R=>R.IsMatch(D.Desc)));
+            var double_YB = REGEX_DOUBLE_YB_PORT1_to_PORT2.Concat(REGEX_DOUBLE_YB_PORT1_to_PORT3).ToList();
+            var double_ybs=_sDLKeeper.SDL.Cubicle.Devices.Where(D => double_YB.Any(R=>R.IsMatch(D.Desc)));
             foreach(var double_yb in double_ybs)
             {
-                var tuple1 = FindNearestPort(sdl, double_yb.Name, "", "3", new List<Core>());
-                var tuple2 = FindNearestPort(sdl, double_yb.Name, "", "4", new List<Core>());
+                Tuple<string, string, string> tuple1=new Tuple<string, string, string>("","","");
+                Tuple<string, string, string> tuple2 = new Tuple<string, string, string>("", "", "");
+              
+                if (REGEX_DOUBLE_YB_PORT1_to_PORT3.Any(R => R.IsMatch(double_yb.Desc))){
+                    tuple1 = FindNearestPort(sdl, double_yb.Name, "", "4", new List<Core>());
+                    tuple2 = FindNearestPort(sdl, double_yb.Name, "", "2", new List<Core>());
+                }
+                else
+                {
+                    tuple1 = FindNearestPort(sdl, double_yb.Name, "", "3", new List<Core>());
+                    tuple2 = FindNearestPort(sdl, double_yb.Name, "", "4", new List<Core>());
+                }
+                
                 var item = rootItem.GetItems().FirstOrDefault(p => p.Name == @"双层压板测试").Clone();
                 if (item != null)
                 {
@@ -666,7 +663,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == AnotherDevice)!;
             if (device.Class.Equals("YB"))
             {
-                if (REGEX_DOUBLE_YB.Any(R => R.IsMatch(device.Desc)))
+                var double_YB = REGEX_DOUBLE_YB_PORT1_to_PORT2.Concat(REGEX_DOUBLE_YB_PORT1_to_PORT3).ToList();
+
+                if (double_YB.Any(R => R.IsMatch(device.Desc)))
                 {
                     if (int.TryParse(AnotherPort, out int portANumber))
                     {

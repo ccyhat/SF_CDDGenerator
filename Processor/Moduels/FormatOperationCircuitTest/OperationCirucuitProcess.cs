@@ -107,7 +107,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatOperationCircuitTest
         private Dictionary<string, List<OperationDODeviceEnd>> OperationDOObject = new Dictionary<string, List<OperationDODeviceEnd>>();
         public Task OperationCirucuitProcessAsync(SDL sdl, Items root, List<string> NodeName)
         {
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => OPBORAD_REGEX.IsMatch(B.Desc) || DOBORAD_REGEX.IsMatch(B.Desc)).ToList();
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => OPBORAD_REGEX.IsMatch(B.Desc) || DOBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).ToList();
             Dictionary<string, List<OperationDODeviceEnd>> TripDOObject = new Dictionary<string, List<OperationDODeviceEnd>>();
             var regexMappings = new Dictionary<Regex, Dictionary<string, List<OperationDODeviceEnd>>>
             {
@@ -331,7 +331,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatOperationCircuitTest
         }
         private Tuple<string, string> FindTripDIPort(List<Regex> DIRegex)
         {
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => OPBORAD_REGEX.IsMatch(B.Desc) || DOBORAD_REGEX.IsMatch(B.Desc)).ToList();
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => OPBORAD_REGEX.IsMatch(B.Desc) || DOBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).ToList();
             foreach (var board in boards)
             {
                 var port = board.Ports.FirstOrDefault(P => DIRegex.Any(R => R.IsMatch(P.Desc)));

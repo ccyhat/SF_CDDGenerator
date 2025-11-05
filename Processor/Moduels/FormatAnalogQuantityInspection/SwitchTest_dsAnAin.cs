@@ -58,7 +58,14 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             //Un上有开关就生成2个command和2个kk
             if (res == IS_CONTINUE.Continue)
             {
-                res = ONEKK(target, info);
+                if (info.Value.GetSeperateKK().Any())
+                {
+                    res = Seperate_ONEKK(target, info);
+                }
+                else
+                {
+                    res = ONEKK(target, info);
+                }
             }
             //Un和Ux上都有开关就生成3个command和2个kk
             if (res == IS_CONTINUE.Continue)
@@ -101,7 +108,15 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             //Un上有开关就生成2个command和2个kk
             if (res == IS_CONTINUE.Continue)
             {
-                res = ONEKK(target, info);
+                if (info.Value.GetSeperateKK().Any())
+                {
+                    res = Seperate_ONEKK(target, info);
+                }
+                else
+                {
+                    res = ONEKK(target, info);
+                }
+                   
             }
             //Un和Ux上都有开关就生成3个command和2个kk
             if (res == IS_CONTINUE.Continue)
@@ -152,7 +167,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             {
                 //没有空开，不用切换
             }
-            if (info.Value.KK_BYQ_List1.Where(L => L.Contains("KK")).Count() != 0 && info.Value.KK_BYQ_List2.Where(L => L.Contains("KK")).Count() == 0)
+            if (!info.Value.GetSeperateKK().Any()&&info.Value.KK_BYQ_List1.Where(L => L.Contains("KK")).Count() != 0 && info.Value.KK_BYQ_List2.Where(L => L.Contains("KK")).Count() == 0)
             {
                 var safetys = target.GetSafetys();
                 var safe1 = safetys.FirstOrDefault(S => S.Name.Contains("提示闭合1ZKK1")).Clone();
@@ -161,7 +176,21 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 safe1.DllCall.CData = $"SpeakString=闭合{KKname};ExpectString=是否完成;";
                 newitems.Add(safe1);
             }
-            if (info.Value.KK_BYQ_List1.Where(L => L.Contains("KK")).Count() != 0 && info.Value.KK_BYQ_List2.Where(L => L.Contains("KK")).Count() != 0)
+            if (info.Value.GetSeperateKK().Any() && info.Value.KK_BYQ_List2.Where(L => L.Contains("KK")).Count() == 0)
+            {
+                var kks = info.Value.GetSeperateKK();
+                foreach (var kk in kks)
+                {
+                    var safetys = target.GetSafetys();
+                    var safe1 = safetys.FirstOrDefault(S => S.Name.Contains("提示闭合1ZKK1")).Clone();
+
+                    safe1.Name = $"提示闭合{kk}";
+                    safe1.DllCall.CData = $"SpeakString=闭合{kk};ExpectString=是否完成;";
+                    newitems.Add(safe1);
+                }
+
+            }
+            if (!info.Value.GetSeperateKK().Any() && info.Value.KK_BYQ_List1.Where(L => L.Contains("KK")).Count() != 0 && info.Value.KK_BYQ_List2.Where(L => L.Contains("KK")).Count() != 0)
             {
                 var safetys = target.GetSafetys();
                 var safe1 = safetys.FirstOrDefault(S => S.Name.Contains("提示闭合1ZKK1")).Clone();
@@ -173,6 +202,24 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 safe2.Name = $"提示闭合{KKname2}";
                 safe2.DllCall.CData = $"SpeakString=闭合{KKname2};ExpectString=是否完成;";
                 newitems.Add(safe1);
+                newitems.Add(safe2);
+            }
+            if( info.Value.GetSeperateKK().Any() && info.Value.KK_BYQ_List2.Where(L => L.Contains("KK")).Count() != 0)
+            {
+                var kks = info.Value.GetSeperateKK();
+                foreach (var kk in kks)
+                {
+                    var safetys = target.GetSafetys();
+                    var safe1 = safetys.FirstOrDefault(S => S.Name.Contains("提示闭合1ZKK1")).Clone();
+                    safe1.Name = $"提示闭合{kk}";
+                    safe1.DllCall.CData = $"SpeakString=闭合{kk};ExpectString=是否完成;";
+                    newitems.Add(safe1);
+                }
+                var safetys2 = target.GetSafetys();
+                var safe2 = safetys2.FirstOrDefault(S => S.Name.Contains("提示闭合1ZKK2")).Clone();
+                string KKname2 = info.Value.KK_BYQ_List2.Where(L => L.Contains("KK")).FirstOrDefault();
+                safe2.Name = $"提示闭合{KKname2}";
+                safe2.DllCall.CData = $"SpeakString=闭合{KKname2};ExpectString=是否完成;";
                 newitems.Add(safe2);
             }
             target.Safety_CommCMD_List = newitems.ToList();
@@ -288,27 +335,26 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 return IS_CONTINUE.Continue;
             }
         }
-        private IS_CONTINUE ONEKK(MacroTest target, KeyValuePair<string, ACDeviceUint> info)
+        private IS_CONTINUE Seperate_ONEKK(MacroTest target, KeyValuePair<string, ACDeviceUint> info)
         {
             var commCmds = target.GetCommCMDs();
-            var commCmdsDeepCopy = commCmds.Select(cmd => cmd.Clone()).ToList();
-
-            foreach (var command in commCmdsDeepCopy)
+            for (int i = 0; i < Math.Min(3, info.Value.Group1.Count); i++)
             {
-                int count = 0;
-                StringBuilder sb = new StringBuilder();
+                
+                var commCmdsDeepCopy = commCmds.Select(cmd => cmd.Clone()).ToList();
+                foreach (var command in commCmdsDeepCopy)
                 {
+                    int count = 0;
+                    StringBuilder sb = new StringBuilder();
                     sb.AppendLine();
                     if (info.Value.KK_BYQ_List1.Where(L => L.Contains("BYQ")).Count() != 0)
                     {
                         sb.Append("vPsum = vPsum/3.8;");
                     }
-
                     sb.AppendLine();
                     if (info.Value.Group1 != null && info.Value.Group1.Count > 0)
-                    {                     
-                        for (int i = 0; i < Math.Min(3, info.Value.Group1.Count); i ++)              
-                        {
+                    {
+                        
                             var item = info.Value.Group1[i];
                             var source = GetBoardPort(item);
                             var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
@@ -327,7 +373,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                                     count += 2;
                                 }
                             }
-                        }
+                        
                     }
                     if (info.Value.Group2 != null && info.Value.Group2.Count > 0)
                     {
@@ -349,15 +395,14 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     sb.AppendLine();
                     if (info.Value.Group3 != null && info.Value.Group3.Count > 0)
                     {
-                        for (int i = 0; i < Math.Min(3, info.Value.Group3.Count); i++)
-                        {
-                            var item = info.Value.Group3[i];
-                            var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
-                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[i]}, -1, vg_MRIErrorRel); ");
-                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[i]}, vg_MRIAngErrorAbs, -1); ");             
-                            count += 2;
-                        }
+
+                        var item = info.Value.Group3[i];
+                        var source = GetBoardPort(item);
+                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[i]}, -1, vg_MRIErrorRel); ");
+                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[i]}, vg_MRIAngErrorAbs, -1); ");
+                        count += 2;
+
                     }
                     if (info.Value.Group4 != null && info.Value.Group4.Count > 0)
                     {
@@ -387,7 +432,120 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         sb.AppendLine(@"ShowMsg(strshow);");
                     }
                     sb.AppendLine();
+                    command.ScriptResult.CData = $"{SCRIPT_2}\n{sb.ToString()}\n{SCRIPT_2_END}\n\nif(nRsltJdg=={count}) then\n{SCRIPT_2_TAIL}";
                 }
+                target.Safety_CommCMD_List.AddRange(commCmdsDeepCopy);
+            }
+           
+            if (info.Value.KK_BYQ_List1.Where(L => L.Contains("KK")).Count() == 0 || info.Value.KK_BYQ_List2.Where(L => L.Contains("KK")).Count() == 0)
+            {
+                return IS_CONTINUE.Stop;
+            }
+            else
+            {
+                return IS_CONTINUE.Continue;
+            }
+        }
+        private IS_CONTINUE ONEKK(MacroTest target, KeyValuePair<string, ACDeviceUint> info)
+        {
+            var commCmds = target.GetCommCMDs();
+            var commCmdsDeepCopy = commCmds.Select(cmd => cmd.Clone()).ToList();
+
+            foreach (var command in commCmdsDeepCopy)
+            {
+                int count = 0;
+                StringBuilder sb = new StringBuilder();
+
+                sb.AppendLine();
+                if (info.Value.KK_BYQ_List1.Where(L => L.Contains("BYQ")).Count() != 0)
+                {
+                    sb.Append("vPsum = vPsum/3.8;");
+                }
+
+                sb.AppendLine();
+                if (info.Value.Group1 != null && info.Value.Group1.Count > 0)
+                {
+                    for (int i = 0; i < Math.Min(3, info.Value.Group1.Count); i++)
+                    {
+                        var item = info.Value.Group1[i];
+                        var source = GetBoardPort(item);
+                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                        if (info.Value.KK_BYQ_List1.Where(L => L.Contains("KK")).Count() != 0)
+                        {
+                            if (info.Value.KK_BYQ_List1.Where(L => L.Contains("BYQ")).Count() != 0)
+                            {
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", 15.19, -1, vg_MRUErrorRel); ");
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[i]}, vg_MRUAngErrorAbs, -1);");
+                                count += 2;
+                            }
+                            else
+                            {
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {U_param[i]}, -1, vg_MRUErrorRel); ");
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[i]}, vg_MRUAngErrorAbs, -1);");
+                                count += 2;
+                            }
+                        }
+                    }
+                }
+                if (info.Value.Group2 != null && info.Value.Group2.Count > 0)
+                {
+                    foreach (var item in info.Value.Group2.GetRange(0, 1))
+                    {
+                        var source = GetBoardPort(item);
+                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                        if (info.Value.KK_BYQ_List1.Any(L => L.Contains("KK")) ^ info.Value.KK_BYQ_List2.Any(L => L.Contains("KK")))//异或关系
+                        {
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {U_param[0]}, -1, vg_MRUErrorRel); ");
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[0]}, vg_MRUAngErrorAbs, -1);");
+                            count += 2;
+                        }
+
+                    }
+                }
+                sb.AppendLine("strshow = string.format(\"nRsltJdg=%d\", nRsltJdg);");
+                sb.AppendLine("ShowMsg(strshow);");
+                sb.AppendLine();
+                if (info.Value.Group3 != null && info.Value.Group3.Count > 0)
+                {
+                    for (int i = 0; i < Math.Min(3, info.Value.Group3.Count); i++)
+                    {
+                        var item = info.Value.Group3[i];
+                        var source = GetBoardPort(item);
+                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[i]}, -1, vg_MRIErrorRel); ");
+                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[i]}, vg_MRIAngErrorAbs, -1); ");
+                        count += 2;
+                    }
+                }
+                if (info.Value.Group4 != null && info.Value.Group4.Count > 0)
+                {
+                    foreach (var item in info.Value.Group4.GetRange(0, 1))
+                    {
+                        var source = GetBoardPort(item);
+                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, -1, vg_MRIErrorRel); ");
+                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[0]}, vg_MRIAngErrorAbs, -1); ");
+                        count += 2;
+                    }
+                }
+                if (info.Value.Group5 != null && info.Value.Group5.Count > 0)
+                {
+                    foreach (var item in info.Value.Group5.GetRange(0, 1))
+                    {
+                        var source = GetBoardPort(item);
+                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, -1, vg_MRIErrorRel); ");
+                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[1]}, vg_MRIAngErrorAbs, -1); ");
+                        count += 2;
+                    }
+                }
+                if ((info.Value.Group3 != null && info.Value.Group3.Count > 0) || (info.Value.Group4 != null && info.Value.Group4.Count > 0))
+                {
+                    sb.AppendLine(@"strshow = string.format(""nRsltJdg=%d"", nRsltJdg);");
+                    sb.AppendLine(@"ShowMsg(strshow);");
+                }
+                sb.AppendLine();
+
                 command.ScriptResult.CData = $"{SCRIPT_2}\n{sb.ToString()}\n{SCRIPT_2_END}\n\nif(nRsltJdg=={count}) then\n{SCRIPT_2_TAIL}";
             }
             target.Safety_CommCMD_List.AddRange(commCmdsDeepCopy);
@@ -404,7 +562,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         {
             var commCmds = target.GetCommCMDs();
             var commCmdsDeepCopy = commCmds.Select(cmd => cmd.Clone()).ToList();
-            commCmdsDeepCopy = commCmdsDeepCopy.GetRange(0, commCmdsDeepCopy.Count() / 2);
+            int cpu_count = _deviceModelKeeper.TargetDeviceModel.LDevices.Count(LD => LD.Name.StartsWith("CPU"));
+            commCmdsDeepCopy = commCmdsDeepCopy.GetRange(0, cpu_count);
             foreach (var command in commCmdsDeepCopy)
             {
                 int count = 0;
@@ -744,11 +903,123 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 return IS_CONTINUE.Continue;
             }
         }
+        private IS_CONTINUE Seperate_ONEKK(Items target, KeyValuePair<string, ACDeviceUint> info)
+        {
+            var commCmds = target.GetCommCMDs();
+            for (int i = 0; i < Math.Min(3, info.Value.Group1.Count); i++)
+            {
+
+                var commCmdsDeepCopy = commCmds.Select(cmd => cmd.Clone()).ToList();
+                foreach (var command in commCmdsDeepCopy)
+                {
+                    int count = 0;
+                    StringBuilder sb = new StringBuilder();
+                    sb.AppendLine();
+                    if (info.Value.KK_BYQ_List1.Where(L => L.Contains("BYQ")).Count() != 0)
+                    {
+                        sb.Append("vPsum = vPsum/3.8;");
+                    }
+                    sb.AppendLine();
+                    if (info.Value.Group1 != null && info.Value.Group1.Count > 0)
+                    {
+
+                        var item = info.Value.Group1[i];
+                        var source = GetBoardPort(item);
+                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                        if (info.Value.KK_BYQ_List1.Where(L => L.Contains("KK")).Count() != 0)
+                        {
+                            if (info.Value.KK_BYQ_List1.Where(L => L.Contains("BYQ")).Count() != 0)
+                            {
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", 15.19, -1, vg_MRUErrorRel); ");
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[i]}, vg_MRUAngErrorAbs, -1);");
+                                count += 2;
+                            }
+                            else
+                            {
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {U_param[i]}, -1, vg_MRUErrorRel); ");
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[i]}, vg_MRUAngErrorAbs, -1);");
+                                count += 2;
+                            }
+                        }
+
+                    }
+                    if (info.Value.Group2 != null && info.Value.Group2.Count > 0)
+                    {
+                        foreach (var item in info.Value.Group2.GetRange(0, 1))
+                        {
+                            var source = GetBoardPort(item);
+                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            if (info.Value.KK_BYQ_List1.Any(L => L.Contains("KK")) ^ info.Value.KK_BYQ_List2.Any(L => L.Contains("KK")))//异或关系
+                            {
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {U_param[0]}, -1, vg_MRUErrorRel); ");
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[0]}, vg_MRUAngErrorAbs, -1);");
+                                count += 2;
+                            }
+
+                        }
+                    }
+                    sb.AppendLine("strshow = string.format(\"nRsltJdg=%d\", nRsltJdg);");
+                    sb.AppendLine("ShowMsg(strshow);");
+                    sb.AppendLine();
+                    if (info.Value.Group3 != null && info.Value.Group3.Count > 0)
+                    {
+
+                        var item = info.Value.Group3[i];
+                        var source = GetBoardPort(item);
+                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[i]}, -1, vg_MRIErrorRel); ");
+                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[i]}, vg_MRIAngErrorAbs, -1); ");
+                        count += 2;
+
+                    }
+                    if (info.Value.Group4 != null && info.Value.Group4.Count > 0)
+                    {
+                        foreach (var item in info.Value.Group4.GetRange(0, 1))
+                        {
+                            var source = GetBoardPort(item);
+                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, -1, vg_MRIErrorRel); ");
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[0]}, vg_MRIAngErrorAbs, -1); ");
+                            count += 2;
+                        }
+                    }
+                    if (info.Value.Group5 != null && info.Value.Group5.Count > 0)
+                    {
+                        foreach (var item in info.Value.Group5.GetRange(0, 1))
+                        {
+                            var source = GetBoardPort(item);
+                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, -1, vg_MRIErrorRel); ");
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[1]}, vg_MRIAngErrorAbs, -1); ");
+                            count += 2;
+                        }
+                    }
+                    if ((info.Value.Group3 != null && info.Value.Group3.Count > 0) || (info.Value.Group4 != null && info.Value.Group4.Count > 0))
+                    {
+                        sb.AppendLine(@"strshow = string.format(""nRsltJdg=%d"", nRsltJdg);");
+                        sb.AppendLine(@"ShowMsg(strshow);");
+                    }
+                    sb.AppendLine();
+                    command.ScriptResult.CData = $"{SCRIPT_2}\n{sb.ToString()}\n{SCRIPT_2_END}\n\nif(nRsltJdg=={count}) then\n{SCRIPT_2_TAIL}";
+                }
+                target.ItemList.AddRange(commCmdsDeepCopy);
+            }
+
+            if (info.Value.KK_BYQ_List1.Where(L => L.Contains("KK")).Count() == 0 || info.Value.KK_BYQ_List2.Where(L => L.Contains("KK")).Count() == 0)
+            {
+                return IS_CONTINUE.Stop;
+            }
+            else
+            {
+                return IS_CONTINUE.Continue;
+            }
+        }
         private IS_CONTINUE TWOKK(Items target, KeyValuePair<string, ACDeviceUint> info)
         {
             var commCmds = target.GetCommCMDs();
             var commCmdsDeepCopy = commCmds.Select(cmd => cmd.Clone()).ToList();
-            commCmdsDeepCopy = commCmdsDeepCopy.GetRange(0, commCmdsDeepCopy.Count() / 2);
+            int cpu_count = _deviceModelKeeper.TargetDeviceModel.LDevices.Count(LD => LD.Name.StartsWith("CPU"));
+            commCmdsDeepCopy = commCmdsDeepCopy.GetRange(0, cpu_count);
             foreach (var command in commCmdsDeepCopy)
             {
                 int count = 0;

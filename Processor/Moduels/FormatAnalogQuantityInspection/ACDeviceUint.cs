@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
@@ -31,6 +32,11 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             this.KK_BYQ_List3.AddRange(obj.KK_BYQ_List3);
             this.KK_BYQ_List4.AddRange(obj.KK_BYQ_List4);
             this.KK_BYQ_List5.AddRange(obj.KK_BYQ_List5);
+        }
+        public List<string> GetSeperateKK()
+        {
+            Regex regex = new Regex(@".*ZKK.*(a|b|c)");
+            return KK_BYQ_List1.Where(KK => regex.IsMatch(KK)).ToList();           
         }
     };
 }

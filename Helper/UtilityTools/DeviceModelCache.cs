@@ -44,7 +44,7 @@ namespace SFTemplateGenerator.Helper.UtilityTools
         }
         public bool IsMatch(string boardName, string portName)
         {
-            var key = boardName + "-" + portName;
+            var key = boardName + "-" + portName + "-";
             if (_dicdevicesId.Keys.Any(K => K.StartsWith(key)))
             {
                 var realKey = _dicdevicesId.Keys.Where(K => K.StartsWith(key)).FirstOrDefault();
@@ -62,7 +62,7 @@ namespace SFTemplateGenerator.Helper.UtilityTools
         public string GetDataSetId(string boardName, string portName, string desc)
         {
             //// 2025年1月3日，因为deviceModel中的Name与cdd中Port的desc不对应导致不能正确判断dsAin而做的修改。我觉得这个本身就是一个风险。    许阳
-            var key = boardName + "-" + portName;
+            var key = boardName + "-" + portName + "-";
             if (_dicdevicesId.Keys.Any(K => K.StartsWith(key)))
             {
                 var realKey = _dicdevicesId.Keys.Where(K => K.StartsWith(key)).FirstOrDefault();

@@ -32,7 +32,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
         public async Task<bool> FailAlarmTestAsync(SDL sdl, Items root)
         {
             //获取电源插件
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => POWERBORAD_REGEX.IsMatch(B.Desc)).ToList();
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => POWERBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).ToList();
 
             List<FailPort> failportList = new List<FailPort>();
             List<PowerCoreInfo> powerportList = new List<PowerCoreInfo>();
