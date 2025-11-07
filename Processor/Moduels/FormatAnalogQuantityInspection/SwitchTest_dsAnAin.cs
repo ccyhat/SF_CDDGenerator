@@ -393,17 +393,24 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     sb.AppendLine("strshow = string.format(\"nRsltJdg=%d\", nRsltJdg);");
                     sb.AppendLine("ShowMsg(strshow);");
                     sb.AppendLine();
-                    if (info.Value.Group3 != null && info.Value.Group3.Count > 0)
+                    if (i == 0)//只在a相上测一次，后面就测了
                     {
+                        for (int j = 0; j < Math.Min(3, info.Value.Group3.Count); j++)
+                        {
+                            if (info.Value.Group3 != null && info.Value.Group3.Count > 0)
+                            {
 
-                        var item = info.Value.Group3[i];
-                        var source = GetBoardPort(item);
-                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
-                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[i]}, -1, vg_MRIErrorRel); ");
-                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[i]}, vg_MRIAngErrorAbs, -1); ");
-                        count += 2;
+                                var item = info.Value.Group3[j];
+                                var source = GetBoardPort(item);
+                                var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[j]}, -1, vg_MRIErrorRel); ");
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[j]}, vg_MRIAngErrorAbs, -1); ");
+                                count += 2;
 
+                            }
+                        }
                     }
+                  
                     if (info.Value.Group4 != null && info.Value.Group4.Count > 0)
                     {
                         foreach (var item in info.Value.Group4.GetRange(0, 1))

@@ -158,6 +158,11 @@ namespace SFTemplateGenerator.MainWindow.ViewModels
                         }
                     }
                 }
+                if (modelname==null)
+                {
+                    _notifyException.RaiseException(this, $"cdd 模板错误");
+                    return;
+                }
                 var result_dio = _configProcessor.GetDIODefine(modelname.Val);
                 if (result_dio.Equals(null) || result_dio.Entity == null)
                 {

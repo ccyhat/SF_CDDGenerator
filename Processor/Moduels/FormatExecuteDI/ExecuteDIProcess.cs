@@ -85,6 +85,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
         {
             new Regex(@"^远方跳闸(\d)?$"),
         };
+        private static readonly List<Regex> REGEX_ShouHeTongQi = new()
+        {
+            new Regex(@"^手合同期\+$"),
+        };
         private List<string> workerTestList = new();//存储自行测试名称
         private List<string> workerBSTestList = new();//存储自行测试名称
         private List<string> publicBoardList = new();//存储于DI公共端相连的节点
@@ -335,7 +339,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
                 var devices = dIObject.GetDevices(_sDLKeeper.SDL);
                 var FirstKKdevice = devices.FirstOrDefault(D => KKTOTAL.Any(R => R.IsMatch(D.Class)));
                 //有两个BS的
-                if (devices.Where(D => D.Class.Equals("BS")).Count() >= 2)
+                if (REGEX_ShouHeTongQi.Any(R => R.IsMatch(dIObject.StartPort.Item3.Desc))) 
                 {
                     CreateShouHeTongQi(rootItem, dIObject);
                 }
@@ -390,9 +394,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
                 if (safety != null)
                 {
                     var tuple1 = DIObject.GetNear();
-                    var speakStrings = $"调试员进行{PortReallDesc}接{tuple1.Item1}{tuple1.Item2}把手测试";
-                    safety.Name = $"提示接入开入信号:{tuple1.Item1}{tuple1.Item2}";
-                    item.Name = $"{PortReallDesc.Replace("ProtDO:", "")}开入测试:{tuple1.Item1}{tuple1.Item2}";
+                    var speakStrings = $"调试员进行{PortReallDesc}把手测试";
+                    safety.Name = $"{PortReallDesc}测试";
+                    item.Name = $"调试人员自测：{PortReallDesc}";
                     safety.DllCall.CData = $"SpeakString={speakStrings};ExpectString=是否完成;";
                 }
                 rootItem.ItemList.Add(item);

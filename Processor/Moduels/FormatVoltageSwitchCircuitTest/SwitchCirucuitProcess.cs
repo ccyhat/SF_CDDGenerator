@@ -22,6 +22,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatVoltageSwitchCircuitTest
         private static readonly List<Regex> REGEX_POSITIVE = new()
         {
             new Regex(@"^装置电源\+$"),
+            new Regex(@"^切换电源\+$"),
+            new Regex(@"^装置电源正$"),
         };
         private readonly List<Regex> ISCONTINUE = new() {
             new Regex(@"\d{1}-\d{1,2}CD"),
@@ -376,7 +378,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatVoltageSwitchCircuitTest
             foreach (var device in devices)
             {
                 var board = device.Boards.FirstOrDefault(B => REGEX_POSITIVE.Any(R => R.IsMatch(B.Desc)));
-                return new Tuple<string, string>(device.Name, board.Name);
+                if (board != null) {
+                    return new Tuple<string, string>(device.Name, board.Name);
+                }
+               
             }
             return new Tuple<string, string>("", "");
         }

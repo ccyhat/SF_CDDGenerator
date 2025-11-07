@@ -32,6 +32,13 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                 var core = cores.FirstOrDefault() ?? null!;
                 DeviceName = core.DeviceB;
                 BoardName = core.BoardB;
+                var device = Devices.Where(D => D.Name.Equals(DeviceName)).FirstOrDefault()!;
+                if(!device.Class.Equals("TD"))
+                {
+                    DeviceName = core.DeviceA;
+                    BoardName = core.BoardA;
+                }
+              
                 return new Tuple<string, string>(DeviceName, BoardName);
             }
             else if (cores.Count() >= 2)

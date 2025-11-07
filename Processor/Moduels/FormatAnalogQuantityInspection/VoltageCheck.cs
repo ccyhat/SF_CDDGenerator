@@ -4,6 +4,7 @@ using SFTemplateGenerator.Helper.Shares.SDL;
 using SFTemplateGenerator.Processor.Interfaces;
 using SFTemplateGenerator.Processor.Interfaces.FormatAnalogQuantityInspection;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using static SFTemplateGenerator.Helper.Constants.CDDRegex;
@@ -23,7 +24,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         //开关量正则表达式
         private static readonly Regex REGEX_HIGHVOLTAGE= new Regex(@"(h|g|m|l|p|r)", RegexOptions.IgnoreCase);
         private static readonly List<Regex> REGEX_ACPORTS = new List<Regex> { 
-            new Regex(@"^(U|3U|I|3I)([abcnx0jl])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U|3U|I|3I)(a|b|c|n|x|0|j|l|la)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
             new Regex(@$"^(U|3U|I|3I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([abcnx0j])[\`\']?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Uabc = new List<Regex> { 
@@ -43,7 +44,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             new Regex(@$"^(3U|U){REGEX_HIGHVOLTAGE}(\d{{0,2}})([0x])[\`\']?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Iabc = new List<Regex> {
-            new Regex(@"^(I)([abc])(\d{0,2})$", RegexOptions.IgnoreCase),
+            new Regex(@"^(I)(a|b|c|la)(\d{0,2})$", RegexOptions.IgnoreCase),
             new Regex(@$"^(I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([abc])$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_In = new List<Regex> { 
@@ -184,8 +185,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     // 提取尾号
                     string tailStr = match.Groups[3].Value;
                     string tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;                    
-                    string tailStr1 = match.Groups[1].Value +match.Groups[2].Value;
-                    if( REGEX_HIGHVOLTAGE.IsMatch(tailStr1)&& match.Groups.Count==5)
+                    string tailStr1 = match.Groups[1].Value +match.Groups[2].Value;               
+                    if ( match.Groups.Count== REGEX_ACPORTS[1].GetGroupNumbers().Count())
                     {
                         tailNumber = tailStr1 + tailNumber;
                     }
@@ -196,7 +197,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             tailStr = match.Groups[3].Value;
                             tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : (int.Parse(tailStr) + 1).ToString(); ;
                             tailStr1 = match.Groups[2].Value;
-                            if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1) && match.Groups.Count == 5)
+                            if (match.Groups.Count == REGEX_ACPORTS[1].GetGroupNumbers().Count())
                             {
                                 tailNumber = tailStr1 + tailNumber;
                             }
@@ -206,7 +207,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             tailStr = match.Groups[3].Value;
                             tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
                             tailStr1 = match.Groups[2].Value;
-                            if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1) && match.Groups.Count == 5)
+                            if (match.Groups.Count == REGEX_ACPORTS[1].GetGroupNumbers().Count())
                             {
                                 tailNumber = tailStr1 + tailNumber;
                             }
@@ -217,7 +218,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         tailStr = match.Groups[3].Value;
                         tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
                         tailStr1 = match.Groups[2].Value;
-                        if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1) && match.Groups.Count == 5)
+                        if (match.Groups.Count == REGEX_ACPORTS[1].GetGroupNumbers().Count())
                         {
                             tailNumber = tailStr1 + tailNumber;
                         }

@@ -1,4 +1,5 @@
 ﻿
+using Autofac.Core;
 using Castle.Components.DictionaryAdapter.Xml;
 using SFTemplateGenerator.Helper.Shares.GuideBook;
 using SFTemplateGenerator.Helper.Shares.SDL;
@@ -29,6 +30,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         private readonly List<Regex> REGEX_Air_Switch_Auxiliary_Contact = new List<Regex> {
             new Regex(@"^空开辅助接点"),
         };
+      
         private readonly List<Regex> REGEX_DOUBLE_YB_PORT1_to_PORT2 = new List<Regex> {//双层压板有两种接线在开出端子上一个是1-2，3-4。另一种是1-3，2-4。
             new Regex(@"^连接片_XH76W4T-DKZ_红色_常州洛阳华泰$"),
         };
@@ -105,6 +107,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         {
             foreach (var dODeviceEnd in doDeviceEnds)
             {
+                
                 if (REGEX_DOOthers.Any(R => R.IsMatch(dODeviceEnd.StartPort.Item3.Desc)))
                 {
                     Create_DO_By_Des(doDeviceEnds, rootItem);
@@ -549,13 +552,13 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             if (item != null)
             {
                 var source = GetBoard_Port_PortDesc(DOObjectPair.dODeviceEnd2);
-
+                var PortReallDesc = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
                 var safety = item.GetSafetys().FirstOrDefault(p => p.Name == "提示接入表笔");
                 if (safety != null)
                 {
-                    var speakStrings = $"调试人员自测{source.Item3}";
-                    item.Name = $"调试人员自测：{source.Item3}";
-                    safety.Name = $"{source.Item3}测试";
+                    var speakStrings = $"调试人员进行{PortReallDesc}测试";
+                    item.Name = $"调试人员自测：{PortReallDesc}";
+                    safety.Name = $"{PortReallDesc}测试";
                     safety.DllCall.CData = $"SpeakString={speakStrings};ExpectString=是否合格;";
                 }
                 rootItem.ItemList.Add(item);
@@ -775,7 +778,13 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                                deviceEnd.StartPort.Item3,
                                new List<Core>(),
                                lines);
-                    deviceEnd.cores = GetTargetLine(lines);                  
+                    var cores = GetTargetLine(lines);
+                    if(cores!=null)
+                    {
+                        deviceEnd.cores = cores.Where(C => !C.DeviceA.Contains("FLQYD") && !C.DeviceB.Contains("FLQYD")).ToList();
+                    }
+                    
+                    
                 }
             }
             // 筛选出符合条件的键值对：值列表中cores有效（不为null且数量>0）的元素刚好有2个
@@ -793,6 +802,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
            
                 if(line.Any(C=>REGEX_4QD.IsMatch(C.DeviceA)|| REGEX_4QD.IsMatch(C.DeviceB)|| REGEX_4YD.IsMatch(C.DeviceA) || REGEX_4YD.IsMatch(C.DeviceB)) )
                 {
+                   
                     return line;
                 }
 
@@ -807,7 +817,15 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                     {
                         if (deviceA.Class.Equals("YB") || deviceB.Class.Equals("YB"))
                         {
-                            return line;
+                            if(LastDeviceIsTD(_sDLKeeper.SDL, line))
+                            {
+                                return line;
+                            }
+                            else
+                            {
+                                return line.GetRange(0, line.Count-1);
+                            }
+                            
                         }
                     }
                 }
@@ -866,6 +884,52 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                 return new Tuple<string, string, string>(otherDeviceName, otherBoardName, otherPortName);
             }                                     
             return new Tuple<string, string, string>("", "", "");
+        }
+        private bool LastDeviceIsTD(SDL sdl,List<Core>cores)
+        {
+            if (cores.Count == 1)
+            {
+                return true;
+            }
+            if(cores.Count>1)
+            {
+                var lastCore = cores.LastOrDefault()!;
+                var SecondlastCore = cores[cores.Count-2];
+               
+                if (lastCore.DeviceA== SecondlastCore.DeviceA)
+                {
+                    var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == lastCore.DeviceB);
+                    if(device != null && device.Class.Equals("TD"))
+                    {
+                        return true;
+                    }
+                }
+                if (lastCore.DeviceA == SecondlastCore.DeviceB)
+                {
+                    var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == lastCore.DeviceB);
+                    if (device != null && device.Class.Equals("TD"))
+                    {
+                        return true;
+                    }
+                }
+                if (lastCore.DeviceB == SecondlastCore.DeviceA)
+                {
+                    var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == lastCore.DeviceA);
+                    if (device != null && device.Class.Equals("TD"))
+                    {
+                        return true;
+                    }
+                }
+                if (lastCore.DeviceB == SecondlastCore.DeviceB)
+                {
+                    var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == lastCore.DeviceA);
+                    if (device != null && device.Class.Equals("TD"))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
     }
 }
