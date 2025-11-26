@@ -35,7 +35,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         }
         public List<string> GetSeperateKK()
         {
-            Regex regex = new Regex(@".*ZKK.*(a|b|c)");
+            Regex regex = new Regex(@".*ZKK.*(a|b|c)",RegexOptions.IgnoreCase);
             return KK_BYQ_List1.Where(KK => regex.IsMatch(KK)).ToList();           
         }
     };

@@ -30,7 +30,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         private readonly List<Regex> REGEX_Air_Switch_Auxiliary_Contact = new List<Regex> {
             new Regex(@"^空开辅助接点"),
         };
-      
+        private readonly List<Regex> REGEX_Track_Relay = new List<Regex> {
+            new Regex(@"^轨道继电器"),
+        };
         private readonly List<Regex> REGEX_DOUBLE_YB_PORT1_to_PORT2 = new List<Regex> {//双层压板有两种接线在开出端子上一个是1-2，3-4。另一种是1-3，2-4。
             new Regex(@"^连接片_XH76W4T-DKZ_红色_常州洛阳华泰$"),
         };
@@ -93,6 +95,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             CreateDOObject(DOObjectOperation, rootItem);
             CreateYBD(rootItem);
             CreateAuxiliaryContact(rootItem);
+            CreateTrackRelay(rootItem);
             NodeName.AddRange(this._nodename);
             return Task.CompletedTask;
         }
@@ -107,8 +110,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         {
             foreach (var dODeviceEnd in doDeviceEnds)
             {
-                
-                if (REGEX_DOOthers.Any(R => R.IsMatch(dODeviceEnd.StartPort.Item3.Desc)))
+                var source = GetBoard_Port_PortDesc(dODeviceEnd);
+                var PortReallDesc = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                if (REGEX_DOOthers.Any(R => R.IsMatch(dODeviceEnd.StartPort.Item3.Desc))|| REGEX_DOOthers.Any(R => R.IsMatch(PortReallDesc)))
                 {
                     Create_DO_By_Des(doDeviceEnds, rootItem);
                     return;
@@ -138,7 +142,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             foreach (var dODeviceEnd in DOObject)
             {
                 var dOObjectPair = new DOPortPair(DOObject.FirstOrDefault(), DOObject.LastOrDefault()!);
-                if (dODeviceEnd.StartPort.Item3.Desc.Contains("手合同期")|| dODeviceEnd.StartPort.Item3.Desc.Contains("断路器"))
+                if (ShouldCreateSelfTest(dODeviceEnd))
                 {
                     CreateSelfTest(dOObjectPair, rootItem);
                     break;
@@ -638,12 +642,36 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                         safety.Name = $"提示：{speakStrings}";
                         safety.DllCall.CData = $"SpeakString={speakStrings};ExpectString=是否完成;";
                     }
-
                 }
                 rootItem.ItemList.Add(item);
                 _nodename.Add(item.Name);
             }
         }
+        private void CreateTrackRelay(Items rootItem)
+        {
+            //TODO 轨道继电器
+            var sdl = _sDLKeeper.SDL;
+            var Track_Relay = sdl.Cubicle.Devices.Where(D => REGEX_Track_Relay.Any(R => R.IsMatch(D.Desc)));
+            foreach (var relay in Track_Relay)
+            {
+                var item = rootItem.GetItems().FirstOrDefault(p => p.Name == @"调试人员自测").Clone();
+                item.OrderNum = 4;
+                if (item != null)
+                {
+                   
+                    var safety = item.GetSafetys().FirstOrDefault(p => p.Name == "提示接入表笔");
+                    if (safety != null)
+                    {
+                        var speakStrings = $"调试人员进行{relay.Name}测试";
+                        item.Name = $"调试人员自测：{relay.Name}";
+                        safety.Name = $"{relay.Name}测试";
+                        safety.DllCall.CData = $"SpeakString={speakStrings};ExpectString=是否合格;";
+                    }
+                    rootItem.ItemList.Add(item);
+                    _nodename.Add(item.Name);
+                }
+            }
+         }
         private Tuple<string, string, string> GetAnotherPort(SDL sdl, Core core, string deviceName, string boardName, string portName)
         {
             string AnotherDevice = "";
@@ -836,10 +864,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             }
             return null;
         }
-        private Tuple<string, string, string> FindNearestPort(SDL sdl, Device device, Board board, Port port)
-        {
-            return FindNearestPort(sdl, device.Name, board.Name, port.Name);
-        }
         private Tuple<string, string, string> FindNearestPort(SDL sdl, string device, string board, string port,List<Core> fliter)
         {
             var cores = sdl.Cubicle.Cores.Except(fliter).Where(C =>
@@ -867,22 +891,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                     return res;
                 }                                           
             }        
-            return new Tuple<string, string, string>("", "", "");
-        }
-        private Tuple<string, string, string> FindNearestPort(SDL sdl, string device, string board, string port)
-        {
-            var core = sdl.Cubicle.Cores.FirstOrDefault(C =>
-               (C.DeviceA == device && C.BoardA == board && C.PortA == port) ||
-               (C.DeviceB == device && C.BoardB == board && C.PortB == port)
-               );
-           if(core != null)
-            {
-                var otherDeviceName = core.DeviceA == device ? core.DeviceB : core.DeviceA;
-                var otherBoardName = core.BoardA == board ? core.BoardB : core.BoardA;
-                var otherPortName = core.PortA == port ? core.PortB : core.PortA;
-                var otherDevice = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == otherDeviceName);
-                return new Tuple<string, string, string>(otherDeviceName, otherBoardName, otherPortName);
-            }                                     
             return new Tuple<string, string, string>("", "", "");
         }
         private bool LastDeviceIsTD(SDL sdl,List<Core>cores)
@@ -930,6 +938,14 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                 }
             }
             return false;
+        }
+        private bool ShouldCreateSelfTest(DODeviceEnd dODeviceEnd)
+        {
+            var source = GetBoard_Port_PortDesc(dODeviceEnd);
+            var PortReallDesc = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+            return PortReallDesc.Contains("手合同期") || PortReallDesc.Contains("断路器")
+                || dODeviceEnd.StartPort.Item3.Desc.Contains("手合同期")
+                || dODeviceEnd.StartPort.Item3.Desc.Contains("断路器");
         }
     }
 }

@@ -22,46 +22,45 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private readonly IZeroSequenceVoltageCurrentTest _zeroSequenceVoltageCurrentTest;
         private readonly ISwitchTest_dsAnAin _switchTest_DsAnAin;
         //开关量正则表达式
-        private static readonly Regex REGEX_HIGHVOLTAGE= new Regex(@"(h|g|m|l|p|r)", RegexOptions.IgnoreCase);
         private static readonly List<Regex> REGEX_ACPORTS = new List<Regex> { 
-            new Regex(@"^(U|3U|I|3I)(a|b|c|n|x|0|j|l|la)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(U|3U|I|3I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([abcnx0j])[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U|3U|I|3I)(h|l)?(a|b|c|n|x|0|j|l)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U|3U|I|3I)(h|g|m|l|p|r|z|k)(\d{0,2})(a|b|c|n|x|0|j)[\`\']?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Uabc = new List<Regex> { 
-            new Regex(@"^(U)([abc])(\d{0,2})$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(U){REGEX_HIGHVOLTAGE}(\d{{0,2}})([abc])$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U)(a|b|c)(\d{0,2})$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U)(h|g|m|l|p|r|z|k)(\d{0,2})(a|b|c)$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Un = new List<Regex> { 
-            new Regex(@"^(U)([n])(\d{0,2})$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(U){REGEX_HIGHVOLTAGE}(\d{{0,2}})([n])$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U)(n)(\d{0,2})$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U)(h|g|m|l|p|r|z|k)(\d{0,2})(n)$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Uabc_hat = new List<Regex> { 
-            new Regex(@"^(U)([c])(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(U){REGEX_HIGHVOLTAGE}(\d{{0,2}})([c])[\`\']$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U)(c)(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U)(h|g|m|l|p|r|z|k)(\d{0,2})(c)[\`\']$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Ux = new List<Regex> { 
-            new Regex(@"^(3U|U)([0xl])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(3U|U){REGEX_HIGHVOLTAGE}(\d{{0,2}})([0x])[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(3U|U)(0|x|l)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(3U|U)(h|g|m|l|p|r|z|k)(\d{0,2})(0|x)[\`\']?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Iabc = new List<Regex> {
-            new Regex(@"^(I)(a|b|c|la)(\d{0,2})$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([abc])$", RegexOptions.IgnoreCase),
+            new Regex(@"^(I)(h|l)?(a|b|c)(\d{0,2})$", RegexOptions.IgnoreCase),
+            new Regex(@"^(I)(h|g|m|l|p|r|z|k)(\d{0,2})(a|b|c)$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_In = new List<Regex> { 
-            new Regex(@"^(I)([n])(\d{0,2})$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([n])$", RegexOptions.IgnoreCase),
+            new Regex(@"^(I)(n)(\d{0,2})$", RegexOptions.IgnoreCase),
+            new Regex(@"^(I)(h|g|m|l|p|r|z|k)(\d{0,2})(n)$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Iabc_hat = new List<Regex> {
-            new Regex(@"^(I)([c])(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([c])[\`\']$", RegexOptions.IgnoreCase),
+            new Regex(@"^(I)(h|l)?(c)(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
+            new Regex(@"^(I)(h|g|m|l|p|r|z|k)(\d{0,2})(c)[\`\']$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_I0 = new List<Regex> { 
-            new Regex(@"^(3I|I)([0x])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(3I|I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([0x])[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(3I|I)(0|x)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(3I|I)(h|g|m|l|p|r|z|k)(\d{0,2})(0|x)[\`\']?$", RegexOptions.IgnoreCase),
         };
-        private static readonly List<Regex> REGEX_IJ = new List<Regex> {
-            new Regex(@"^(3I|I)([j])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(3I|I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([j])[\`\']?$", RegexOptions.IgnoreCase),
+        private static readonly List<Regex> REGEX_Ij = new List<Regex> {
+            new Regex(@"^(3I|I)(j)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(3I|I)(h|g|m|l|p|r|z|k)(\d{0,2})(j)[\`\']?$", RegexOptions.IgnoreCase),
         };
         //guidebook正则表达式
         private static readonly Dictionary<TESTER, Regex> REGEX_TEMPLATE = new Dictionary<TESTER, Regex>() {
@@ -178,50 +177,77 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             var groupedByTail = new Dictionary<string, List<Port>>();
             foreach (var p in ports)
             {
-                Match match = REGEX_ACPORTS.Select(r => r.Match(p.Desc)).FirstOrDefault(m => m.Success)!;
+                var (match, index) = REGEX_ACPORTS
+                             .Select((regex, i) => (regex.Match(p.Desc), i))  // 打包：(匹配结果, 索引)
+                             .FirstOrDefault(tuple => tuple.Item1.Success);      // 筛选成功的匹配
                 // 按顺序尝试匹配
                 if (match != null && match.Success)
                 {
+                    string tailNumber = string.Empty;
                     // 提取尾号
-                    string tailStr = match.Groups[3].Value;
-                    string tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;                    
-                    string tailStr1 = match.Groups[1].Value +match.Groups[2].Value;               
-                    if ( match.Groups.Count== REGEX_ACPORTS[1].GetGroupNumbers().Count())
+                    if (index == 1)
                     {
-                        tailNumber = tailStr1 + tailNumber;
+                        string tailStr = match.Groups[3].Value;
+                        tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;
+                        tailNumber = match.Groups[1].Value + match.Groups[2].Value + tailNumber;
                     }
+                    else
+                    {
+                        string tailStr = match.Groups[4].Value;
+                        tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;
+                        tailNumber = match.Groups[1].Value + match.Groups[2].Value + tailNumber;
+                    }
+                             
+                    
                     if (flag.ContainsKey(tailNumber))
                     {
                         if (flag[tailNumber])
                         {
-                            tailStr = match.Groups[3].Value;
-                            tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : (int.Parse(tailStr) + 1).ToString(); ;
-                            tailStr1 = match.Groups[2].Value;
-                            if (match.Groups.Count == REGEX_ACPORTS[1].GetGroupNumbers().Count())
+                            if (index == 1)
                             {
-                                tailNumber = tailStr1 + tailNumber;
+                                string tailStr = match.Groups[3].Value;
+                                tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : (int.Parse(tailStr) + 1).ToString(); 
+                                tailNumber =  match.Groups[2].Value + tailNumber;
+                            }
+                            else
+                            {
+                                string tailStr = match.Groups[4].Value;
+                                tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : (int.Parse(tailStr) + 1).ToString(); 
+                                tailNumber =  match.Groups[2].Value + tailNumber;
                             }
                         }
                         else
                         {
-                            tailStr = match.Groups[3].Value;
-                            tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
-                            tailStr1 = match.Groups[2].Value;
-                            if (match.Groups.Count == REGEX_ACPORTS[1].GetGroupNumbers().Count())
+                            if (index == 1)
                             {
-                                tailNumber = tailStr1 + tailNumber;
+                                string tailStr = match.Groups[3].Value;
+                                tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
+                                tailNumber = match.Groups[2].Value + tailNumber;
                             }
+                            else
+                            {
+                                string tailStr = match.Groups[4].Value;
+                                tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
+                                tailNumber =  match.Groups[2].Value + tailNumber;
+                            }
+                            
                         }
                     }
                     else
                     {
-                        tailStr = match.Groups[3].Value;
-                        tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
-                        tailStr1 = match.Groups[2].Value;
-                        if (match.Groups.Count == REGEX_ACPORTS[1].GetGroupNumbers().Count())
+                        if (index == 1)
                         {
-                            tailNumber = tailStr1 + tailNumber;
+                            string tailStr = match.Groups[3].Value;
+                            tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
+                            tailNumber = match.Groups[2].Value + tailNumber;
                         }
+                        else
+                        {
+                            string tailStr = match.Groups[4].Value;
+                            tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
+                            tailNumber = match.Groups[2].Value + tailNumber;
+                        }
+                        
                     }
                     // 检查字典中是否已存在该尾号的键
                     if (!groupedByTail.ContainsKey(tailNumber))
@@ -274,7 +300,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     else if (REGEX_I0.Any(R => R.IsMatch(p.Desc))){
                         i_0_ports.Add(p);
                     }
-                    else if (REGEX_IJ.Any(R => R.IsMatch(p.Desc)))
+                    else if (REGEX_Ij.Any(R => R.IsMatch(p.Desc)))
                     {
                         i_j_ports.Add(p);
                     }
@@ -694,25 +720,30 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             foreach (var board in boards)
             {
                 foreach (var port in board.Ports)
-                {
+                {                  
                     var regexs = REGEX_Uabc.Concat(REGEX_Iabc).Concat(REGEX_Uabc_hat).Concat(REGEX_Iabc_hat);
                     if (regexs.Any(R => R.IsMatch(port.Desc)))
                     {
-                        Match match = REGEX_ACPORTS.Select(r => r.Match(port.Desc)).FirstOrDefault(m => m.Success)!;
+                        // 从REGEX_ACPORTS中筛选第一个成功匹配的项，返回 (Match, 索引) 元组
+                        var (match, index) = REGEX_ACPORTS
+                            .Select((regex, i) => (regex.Match(port.Desc), i))  // 打包：(匹配结果, 索引)
+                            .FirstOrDefault(tuple => tuple.Item1.Success);      // 筛选成功的匹配
                         if (match != null && match.Success)
                         {
-                            string tailStr = match.Groups[3].Value;
-                            string tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;
-
-                            string tailStr1 = match.Groups[1].Value + match.Groups[2].Value + tailNumber;
-                            if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
+                            string tailNumber=string.Empty;
+                            if (index == 1)
                             {
+                                string tailStr = match.Groups[3].Value;
+                                tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;
                                 tailNumber = match.Groups[1].Value + match.Groups[2].Value + tailNumber;
                             }
                             else
                             {
-                                tailNumber = match.Groups[1].Value + tailNumber;
+                                string tailStr = match.Groups[4].Value;
+                                tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;
+                                tailNumber = match.Groups[1].Value + match.Groups[2].Value + tailNumber;
                             }
+                          
                             if (Desc_list.Contains(tailNumber))
                             {
                                 continue;
@@ -726,10 +757,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 }
             }
 
-            var categoryResult = Desc_list
+          var categoryResult = Desc_list
                 .GroupBy(elem =>
                 {
-                    Regex reg = new Regex(@$"(U|3U|I|3I){REGEX_HIGHVOLTAGE}?(\d{{0,2}})");
+                    Regex reg = new Regex(@"(U|3U|I|3I)(h|g|m|l|p|r|z|k)?(\d{0,2})");
                     var res = reg.Match(elem);
                     return res.Groups[1].Value + res.Groups[2].Value;
                 }
