@@ -45,6 +45,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
         private static readonly List<Regex> REGEX_POSITIVE = new(){
             new Regex(@"^装置电源\+$"),
             new Regex(@"^IN\+$"),
+            new Regex(@"^装置电源正$"),
+            
         };
         private static readonly List<Regex> REGEX_DI_COMM = new(){
             new Regex(@"^KM\+$"),
@@ -163,6 +165,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
         }
         private void Create_DI_By_Desc(Items rootItem, List<DIDeviceEnd> DIObjectList)
         {
+            var itemsToRemove = new List<DIDeviceEnd>(); // 请替换为 DIObject 的实际类型
             foreach (var dIObject in DIObjectList)
             {
                 if (REGEX_IBusbar.Any(R => R.IsMatch(dIObject.StartPort.Item3.Desc)))
@@ -174,6 +177,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
                     if (cores.Any())
                     {
                         CreateBusbar(rootItem, dIObject, REGEX_IBusbarNO, REGEX_IBusbarNC);
+                        itemsToRemove.Add(dIObject);
                     }
 
                 }
@@ -185,8 +189,13 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
                     if (cores.Any())
                     {
                         CreateBusbar(rootItem, dIObject, REGEX_IIBusbarNO, REGEX_IIBusbarNC);
+                        itemsToRemove.Add(dIObject);
                     }
                 }
+            }
+            foreach (var item in itemsToRemove)
+            {
+                DIObjectList.Remove(item);
             }
         }
         private void CreateExtensionBoard(Items rootItem, DIDeviceEnd DIObject, string pos)
@@ -337,6 +346,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             var KKTOTAL = new List<Regex>().Concat(REGEX_FG).Concat(REGEX_BS).Concat(REGEX_YB).Concat(REGEX_JDQ).ToList();
             foreach (var dIObject in DIObjectList)
             {
+               
                 var devices = dIObject.GetDevices(_sDLKeeper.SDL);
                 var FirstKKdevice = devices.FirstOrDefault(D => KKTOTAL.Any(R => R.IsMatch(D.Class)));
                 //有两个BS的
@@ -993,7 +1003,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             foreach (var device in devices)
             {
                 var board = device.Boards.FirstOrDefault(B => REGEX_POSITIVE.Any(R => R.IsMatch(B.Desc)));
-                return new Tuple<string, string>(device.Name, board.Name);
+                if (board != null)
+                {
+                    return new Tuple<string, string>(device.Name, board.Name);
+                }              
             }
             return new Tuple<string, string>("", "");
         }

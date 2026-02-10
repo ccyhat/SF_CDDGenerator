@@ -602,7 +602,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 
             if (device.Class.Equals("TD"))
             {
-                nextCores = totalCores.Except(currentLine).Where(c => c.Class != "接地")
+                nextCores = totalCores.Except(currentLine).Where(c => c.Class != "接地").Where(c => c.DeviceA != "PE")
                     .Where(c =>
                ((c.DeviceA == deviceName && c.BoardA == boardName) ||
                (c.DeviceB == deviceName && c.BoardB == boardName)) &&
@@ -610,7 +610,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             else
             {
-                nextCores = totalCores.Except(currentLine).Where(c => c.Class != "接地")
+                nextCores = totalCores.Except(currentLine).Where(c => c.Class != "接地").Where(c => c.DeviceA != "PE")
                     .Where(c =>
                 (c.DeviceA == deviceName && c.BoardA == boardName && c.PortA == portName) ||
                 (c.DeviceB == deviceName && c.BoardB == boardName && c.PortB == portName)).ToList();

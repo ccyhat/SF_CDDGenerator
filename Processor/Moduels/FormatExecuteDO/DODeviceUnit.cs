@@ -50,7 +50,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                     DeviceName = core.DeviceA;
                     BoardName = core.BoardA;
                     var device = Devices.Where(D => D.Name.Equals(DeviceName)).FirstOrDefault()!;
-                    if (!device.Class.Equals("TD"))
+                   
+                    if (device == null||!device.Class.Equals("TD"))
                     {
                         DeviceName = core.DeviceB;
                         BoardName = core.BoardB;
@@ -62,8 +63,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                 {
                     DeviceName = core.DeviceB;
                     BoardName = core.BoardB;
-                    var device = Devices.Where(D => D.Name.Equals(DeviceName)).FirstOrDefault()!;
-                    if (!device.Class.Equals("TD"))
+                    var device = Devices.Where(D => D.Name.Equals(DeviceName)).FirstOrDefault();
+                 
+                    if (device == null || !device.Class.Equals("TD"))
                     {
                         DeviceName = core.DeviceA;
                         BoardName = core.BoardA;

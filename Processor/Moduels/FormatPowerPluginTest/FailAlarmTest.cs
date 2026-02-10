@@ -16,9 +16,13 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
         private static readonly List<Regex> REGEX_POWERFAIL = new()
         {
             new Regex(@"FAIL"),
-            new Regex(@"装置故障\d"),
+            new Regex(@"^装置故障\d?$"),
         };
-
+        private static readonly List<Regex> REGEX_POWER = new()
+        {
+            new Regex(@"IN"),
+            new Regex(@"装置电源"),
+        };
         public FailAlarmTest(
             ITargetDeviceKeeper targetDeviceKeeper,
             IDeviceModelKeeper deviceModelKeeper,
@@ -33,23 +37,20 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
         {
             //获取电源插件
             var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => POWERBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).ToList();
-
             List<FailPort> failportList = new List<FailPort>();
             List<PowerCoreInfo> powerportList = new List<PowerCoreInfo>();
             //循环添加
             for (int i = 0; i < boards.Count(); i++)
             {
-
-                var failports = boards[i].Ports.Where(P => REGEX_POWERFAIL.Any(R => R.IsMatch(P.Desc)));
+                var failports = boards[i].Ports.Where(P => REGEX_POWERFAIL.Any(R => R.IsMatch(P.Desc))).ToList();
                 var firstFailPortInfo = new PowerCoreInfo((_targetDeviceKeeper.TargetDevice, boards[i], failports.FirstOrDefault()));
                 var lastFailPortInfo = new PowerCoreInfo((_targetDeviceKeeper.TargetDevice, boards[i], failports.LastOrDefault()));
                 failportList.Add(new FailPort(firstFailPortInfo, lastFailPortInfo));
-                var powerports = boards[i].Ports.Where(P => P.Desc.Contains("IN"));
+                var powerports = boards[i].Ports.Where(P => REGEX_POWER.Any(R=>R.IsMatch(P.Desc)));
                 foreach (var port in powerports)
                 {
                     powerportList.Add(new PowerCoreInfo((_targetDeviceKeeper.TargetDevice, boards[i], port)));
                 }
-
             }
             if (failportList.Count() == 0)
             {
@@ -90,7 +91,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
         List<Core> fliter,
         List<Core> Core_list)
         {
-
             var Total_cores = sdl.Cubicle.Cores.ToList();
             var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == deviceName);
             List<Core> cores = null;
@@ -110,7 +110,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
                 (c.DeviceA == deviceName && c.BoardA == boardName && c.PortA == portName) ||
                 (c.DeviceB == deviceName && c.BoardB == boardName && c.PortB == portName)).ToList();
             }
-
             if (cores.Count() == 0)//是否是终端
             {
                 if (IsCorrectEnd(deviceName, boardName, portName))
@@ -164,7 +163,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
                     Core_list.Add(coresLast);
                     return true;
                 }
-
             }
             return false;
         }
@@ -189,16 +187,11 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
             var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == AnotherDevice)!;
             if (device.Class.Equals("YB"))
             {
-
-
                 if (int.TryParse(AnotherPort, out int portANumber))
                 {
                     AnotherPort = (portANumber - 1).ToString();
                 }
-
-
             }
-
             Tuple<string, string, string> tuple = new Tuple<string, string, string>(AnotherDevice, AnotherBoard, AnotherPort);
             return tuple;
         }
@@ -208,7 +201,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
         {
             if (deviceName == _targetDeviceKeeper.TargetDevice.Name)
             {
-
                 return false;
             }
             return true;
@@ -221,8 +213,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
             }
             return true;
         }
-
-
         private Task FailAlarmTestProcess(List<FailPort> failPortList, PowerPort powerPort, Items rootNode)
         {
             var item = rootNode.GetItems().FirstOrDefault(p => p.Name == "失电告警检查");
@@ -248,7 +238,6 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
                 var testItem = item.GetItems().FirstOrDefault(I => I.Name == "断电状态检查").Clone();
                 if (testItem != null)
                 {
-
                     var safety = testItem.GetSafetys().FirstOrDefault();
                     if (safety != null)
                     {

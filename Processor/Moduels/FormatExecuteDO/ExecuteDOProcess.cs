@@ -23,8 +23,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             new Regex(@"^通道故障(\d)?$"),
             new Regex(@"^通道一告警(\d)?$"),
             new Regex(@"^通道一告警(\d)?\(常闭\)$"),
+            new Regex(@"^通道一告警(\d)?\(非保持\)$"),
             new Regex(@"^通道二告警(\d)?$"),
             new Regex(@"^通道二告警(\d)?\(常闭\)$"),
+            new Regex(@"^通道二告警(\d)?\(非保持\)$"),
             new Regex(@"^闭锁调压\(常闭\)$"),
         };
         private readonly List<Regex> REGEX_Air_Switch_Auxiliary_Contact = new List<Regex> {
@@ -691,8 +693,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             }
             var cores = sdl.Cubicle.Cores.ToList();
             //检查下一个是不是短连片
-            var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == AnotherDevice)!;
-            if (device.Class.Equals("YB"))
+            var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == AnotherDevice);
+            if (device!=null&&device.Class.Equals("YB"))
             {
                 var double_YB = REGEX_DOUBLE_YB_PORT1_to_PORT2.Concat(REGEX_DOUBLE_YB_PORT1_to_PORT3).ToList();
 
@@ -707,7 +709,15 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                 {
                     if (int.TryParse(AnotherPort, out int portANumber))
                     {
-                        AnotherPort = (portANumber - 1).ToString();
+                        if (portANumber == 2)
+                        {
+                            AnotherPort = (portANumber - 1).ToString();
+                        }
+                        else if(portANumber==1)
+                        {
+                            AnotherPort = (portANumber + 1).ToString();
+                        }
+                   
                     }
                 }
 
@@ -726,9 +736,16 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         List<List<Core>> lines)
         {
             var totalCores = sdl.Cubicle.Cores.ToList();
-            var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == deviceName)!;
+            var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == deviceName);
             List<Core> nextCores = null!;
-
+            if (device == null)
+            {
+                if (currentLine.Count > 0)
+                {
+                    lines.Add(new List<Core>(currentLine));
+                    return;
+                }
+            }
             if (device.Class.Equals("TD"))
             {
                 nextCores = totalCores.Except(currentLine).Where(c =>
