@@ -21,7 +21,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
         public async Task FormatExecuteDIAsync(Device TargetDevice, SDL sdl, GuideBook guideBook)
         {
             Logger.Info($"开入检测");
-            var boards = TargetDevice.Boards.Where(B => DIBORAD_REGEX.IsMatch(B.Desc)).ToList();
+            var boards = TargetDevice.Boards.Where(B => DIBORAD_REGEX.IsMatch(B.Desc)|| POWERBORAD_REGEX.Any(R => R.IsMatch(B.Desc))).ToList();
             Logger.Info($"开入插件数量：{boards.Count()}");
             if (boards.Count() == 0)
             {

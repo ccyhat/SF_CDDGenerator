@@ -18,6 +18,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private static readonly List<Regex> TRIP_REGEX = new List<Regex>() {
              new Regex (@"^至跳闸线圈$"),
              new Regex (@"^(\d)?TQ[abc]$"),
+             new Regex (@"^跳闸线圈$"),
+             
         };
      
         /// <summary>
@@ -26,7 +28,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private static readonly List<Regex> TRIP_MONITORING_REGEX = new List<Regex>() {
             new Regex (@"^断路器跳位监视$"),
             new Regex (@"^(\d)?TW[abc]$"),
-
+            new Regex (@"^TWJ-$"),            
         };
         /// <summary>
         /// 合闸
@@ -34,7 +36,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private static readonly List<Regex> CLOSE_REGEX = new List<Regex>() {
             new Regex (@"^至合闸线圈 \(内部防跳\)$"),
             new Regex (@"^(\d)?HQ[abc]$"),
-
+            new Regex (@"^合闸线圈$"),           
         };
         /// <summary>
         /// 合闸监视
@@ -42,6 +44,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private static readonly List<Regex> CLOSE_MONITORING_REGEX = new List<Regex>() {
              new Regex (@"^断路器合位监视$"),
              new Regex (@"^(\d)?HW[abc]$"),
+             new Regex (@"^HWJ-$"),
+            
         };
         /// <summary>
         /// 跳闸

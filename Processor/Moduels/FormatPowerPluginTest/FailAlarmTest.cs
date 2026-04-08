@@ -17,6 +17,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
         {
             new Regex(@"FAIL"),
             new Regex(@"^装置故障\d?$"),
+             new Regex(@"^信号公共$"),
         };
         private static readonly List<Regex> REGEX_POWER = new()
         {

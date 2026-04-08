@@ -60,6 +60,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             new Regex(@"^保护检修$"),
             new Regex(@"^检修\+$"),
             new Regex(@"^检修状态$"),
+            new Regex(@"^检修状态硬压板$"),          
         };
         private static readonly List<Regex> REGEX_IBusbar = new(){
             new Regex(@"^投I母电压$"),
@@ -112,7 +113,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
         }
         public Task ExecuteDIProcessAsync(SDL sdl, Items rootItem, List<string> NodeName)
         {
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => DIBORAD_REGEX.IsMatch(B.Desc)).ToList();
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => DIBORAD_REGEX.IsMatch(B.Desc) || POWERBORAD_REGEX.Any(R => R.IsMatch(B.Desc))).ToList();
             List<DIDeviceEnd> DIObjectList = new List<DIDeviceEnd>();//常用检测
             var regexMappings = new Dictionary<Regex, List<DIDeviceEnd>>
             {

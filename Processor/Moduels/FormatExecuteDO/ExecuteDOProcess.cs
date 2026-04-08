@@ -43,6 +43,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         };
         private readonly Regex REGEX_4QD = new Regex(@"4Q(\d)?D");
         private readonly Regex REGEX_4YD = new Regex(@"4Y(\d)?D");
+       
         private List<string> _nodename = new List<string>();//存储节点名称
         public ExecuteDOProcess(
             ITargetDeviceKeeper targetDeviceKeeper,
@@ -119,6 +120,20 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                     Create_DO_By_Des(doDeviceEnds, rootItem);
                     return;
                 }
+                if (REGEX_6U.Any(R=>R.IsMatch(_targetDeviceKeeper.TargetDevice.Model)))//6U特殊处理
+                {
+                    List<Regex> REGEX_DOOthers = new List<Regex> {
+                             new Regex(@"^保护跳闸出口$"),
+                             new Regex(@"^遥控公共$"),
+                             new Regex(@"控制回路断线$"),
+                    };
+                    if (REGEX_DOOthers.Any(R => R.IsMatch(dODeviceEnd.StartPort.Item3.Desc)) || REGEX_DOOthers.Any(R => R.IsMatch(PortReallDesc)))
+                    {
+                        Create_DO_By_Des(doDeviceEnds, rootItem);
+                        return;
+                    }                      
+                }
+             
                 if (dODeviceEnd.GetYBName() != string.Empty)
                 {
                     if (dODeviceEnd.GetOtherHighVoltage_QDName() != string.Empty)
@@ -654,13 +669,40 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             //TODO 轨道继电器
             var sdl = _sDLKeeper.SDL;
             var Track_Relay = sdl.Cubicle.Devices.Where(D => REGEX_Track_Relay.Any(R => R.IsMatch(D.Desc)));
+            
+            // 获取 targetDevice 的前缀数字
+            var targetDevicePrefix = GetDevicePrefix(_targetDeviceKeeper.TargetDevice.Name);
+            
             foreach (var relay in Track_Relay)
             {
+                // 如果 relay 的 device 名称是 "数字-" 开头，需要检查前缀是否与 targetDevice 匹配
+                var relayPrefix = GetDevicePrefix(relay.Name);
+                
+                // 匹配逻辑：
+                // 1. targetDevice 有前缀 (如 "1-1n")，relay 也必须有相同前缀 (如 "1-1ZJ")
+                // 2. targetDevice 无前缀 (如 "1n")，relay 也必须无前缀 (如 "1ZJ", "2ZJ")
+                if (targetDevicePrefix.HasValue)
+                {
+                    // targetDevice 有前缀，relay 必须有相同前缀
+                    if (!relayPrefix.HasValue || relayPrefix != targetDevicePrefix)
+                    {
+                        continue; // 前缀不匹配，跳过
+                    }
+                }
+                else
+                {
+                    // targetDevice 无前缀，relay 也必须无前缀
+                    if (relayPrefix.HasValue)
+                    {
+                        continue; // relay 有前缀，跳过
+                    }
+                }
+                
                 var item = rootItem.GetItems().FirstOrDefault(p => p.Name == @"调试人员自测").Clone();
                 item.OrderNum = 4;
                 if (item != null)
                 {
-                   
+
                     var safety = item.GetSafetys().FirstOrDefault(p => p.Name == "提示接入表笔");
                     if (safety != null)
                     {
@@ -674,6 +716,25 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                 }
             }
          }
+         
+        /// <summary>
+        /// 提取设备名称中的前缀数字（如 "4-1ZJ" 提取出 4，"1-1ZJ" 提取出 1，"1ZJ" 返回 null）
+        /// </summary>
+        /// <param name="deviceName">设备名称</param>
+        /// <returns>前缀数字，如果没有前缀则返回 null</returns>
+        private int? GetDevicePrefix(string deviceName)
+        {
+            if (string.IsNullOrEmpty(deviceName))
+                return null;
+                
+            // 匹配格式：可选的 "数字-" 开头
+            var match = Regex.Match(deviceName, @"^(\d+)-");
+            if (match.Success && int.TryParse(match.Groups[1].Value, out int prefix))
+            {
+                return prefix;
+            }
+            return null;
+        }
         private Tuple<string, string, string> GetAnotherPort(SDL sdl, Core core, string deviceName, string boardName, string portName)
         {
             string AnotherDevice = "";
@@ -960,9 +1021,12 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         {
             var source = GetBoard_Port_PortDesc(dODeviceEnd);
             var PortReallDesc = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
-            return PortReallDesc.Contains("手合同期") || PortReallDesc.Contains("断路器")
+            return PortReallDesc.Contains("手合同期") 
+                || PortReallDesc.Contains("断路器")
+                || PortReallDesc.Contains("保护跳闸出口") || PortReallDesc.Contains("遥控公共") || PortReallDesc.Contains("控制回路断线") //6U特殊处理
                 || dODeviceEnd.StartPort.Item3.Desc.Contains("手合同期")
-                || dODeviceEnd.StartPort.Item3.Desc.Contains("断路器");
+                || dODeviceEnd.StartPort.Item3.Desc.Contains("断路器")
+                || dODeviceEnd.StartPort.Item3.Desc.Contains("保护跳闸出口")  || dODeviceEnd.StartPort.Item3.Desc.Contains("遥控公共") || dODeviceEnd.StartPort.Item3.Desc.Contains("控制回路断线");
         }
     }
 }

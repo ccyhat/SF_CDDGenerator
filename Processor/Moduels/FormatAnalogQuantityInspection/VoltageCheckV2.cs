@@ -21,46 +21,52 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private readonly IZeroSequenceVoltageCurrentTest _zeroSequenceVoltageCurrentTest;
         private readonly ISwitchTest_dsAnAin _switchTest_DsAnAin;
         //开关量正则表达式
-        private static readonly Regex REGEX_HIGHVOLTAGE = new Regex(@"(h|g|m|l|p|r)", RegexOptions.IgnoreCase);
         private static readonly List<Regex> REGEX_ACPORTS = new List<Regex> {
-            new Regex(@"^(U|3U|I|3I)(a|b|c|n|x|0|j|l|la)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(U|3U|I|3I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([abcnx0j])[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(U|3U|I|3I|Ic)(a|b|c|n|x|0|j|l|)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(Ubph)(a|b|c)(\d{0,2})[n]?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(I)(bph)(\d{0,2})[n]?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Uabc = new List<Regex> {
             new Regex(@"^(U)([abc])(\d{0,2})$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(U){REGEX_HIGHVOLTAGE}(\d{{0,2}})([abc])$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Un = new List<Regex> {
             new Regex(@"^(U)([n])(\d{0,2})$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(U){REGEX_HIGHVOLTAGE}(\d{{0,2}})([n])$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Uabc_hat = new List<Regex> {
             new Regex(@"^(U)([c])(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(U){REGEX_HIGHVOLTAGE}(\d{{0,2}})([c])[\`\']$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Ux = new List<Regex> {
             new Regex(@"^(3U|U)([0x])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(3U|U){REGEX_HIGHVOLTAGE}(\d{{0,2}})([0x])[\`\']?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Iabc = new List<Regex> {
             new Regex(@"^(I)(a|b|c|la)(\d{0,2})$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([abc])$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_In = new List<Regex> {
             new Regex(@"^(I)([n])(\d{0,2})$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([n])$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Iabc_hat = new List<Regex> {
             new Regex(@"^(I)([c])(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([c])[\`\']$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_I0 = new List<Regex> {
             new Regex(@"^(3I|I)([0x])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(3I|I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([0x])[\`\']?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_IJ = new List<Regex> {
             new Regex(@"^(3I|I)([j])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
-            new Regex(@$"^(3I|I){REGEX_HIGHVOLTAGE}(\d{{0,2}})([j])[\`\']?$", RegexOptions.IgnoreCase),
+        };
+        private static readonly List<Regex> REGEX_Ibph = new List<Regex> {
+            new Regex(@"^(I)(bph)(\d{0,2})[n]?$", RegexOptions.IgnoreCase),
+        };
+        private static readonly List<Regex> REGEX_Ubph = new List<Regex> {
+            new Regex(@"^(Ubph)(a|b|c)(\d{0,2})$", RegexOptions.IgnoreCase),
+        };
+        private static readonly List<Regex> REGEX_Ubphn = new List<Regex> {
+            new Regex(@"^(Ubph)(an|bn|cn)(\d{0,2})$", RegexOptions.IgnoreCase),
+        };
+        private static readonly List<Regex> REGEX_Ic = new List<Regex> {//测量电流
+            new Regex(@"^(Ic)(a|b|c)(\d{0,2})$", RegexOptions.IgnoreCase),
+        };
+        private static readonly List<Regex> REGEX_Ic_hat = new List<Regex> {
+            new Regex(@"^(Ic)(c)(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> Regex_END = new List<Regex>()
         {
@@ -201,10 +207,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     string tailStr = match.Groups[3].Value;
                     string tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;
                     string tailStr1 = match.Groups[1].Value + match.Groups[2].Value;
-                    if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
-                    {
-                        tailNumber = tailStr1 + tailNumber;
-                    }
+                  
                     if (flag.ContainsKey(tailNumber))
                     {
                         if (flag[tailNumber])
@@ -212,20 +215,14 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             tailStr = match.Groups[3].Value;
                             tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : (int.Parse(tailStr) + 1).ToString(); ;
                             tailStr1 = match.Groups[2].Value;
-                            if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
-                            {
-                                tailNumber = tailStr1 + tailNumber;
-                            }
+                            
                         }
                         else
                         {
                             tailStr = match.Groups[3].Value;
                             tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
                             tailStr1 = match.Groups[2].Value;
-                            if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
-                            {
-                                tailNumber = tailStr1 + tailNumber;
-                            }
+                          
                         }
                     }
                     else
@@ -233,10 +230,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         tailStr = match.Groups[3].Value;
                         tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
                         tailStr1 = match.Groups[2].Value;
-                        if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
-                        {
-                            tailNumber = tailStr1 + tailNumber;
-                        }
+                      
                     }
                     // 检查字典中是否已存在该尾号的键
                     if (!groupedByTail.ContainsKey(tailNumber))
@@ -254,15 +248,21 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             {
                 groupedByTail.Remove(key);
             }
+
             foreach (var group in groupedByTail)
             {
                 var u_ports = new List<Port>();
                 var u_n_ports = new List<Port>();
                 var u_x_ports = new List<Port>();
-                var i_ports = new List<Port>();
-                var i_n_ports = new List<Port>();
+                var i_ports = new List<Port>();//保护电流
+                var i_c_ports = new List<Port>();//测量电流
+                var i_n_ports = new List<Port>();//保护电流
+                var i_cn_ports = new List<Port>();//测量电流
                 var i_0_ports = new List<Port>();
                 var i_j_ports = new List<Port>();
+                var i_bph_ports = new List<Port>();
+                var u_bph_ports = new List<Port>();
+                var u_bph_n_ports = new List<Port>();
                 foreach (var p in group.Value)
                 {
                     if (REGEX_Uabc.Any(R => R.IsMatch(p.Desc)))
@@ -297,8 +297,27 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     {
                         i_j_ports.Add(p);
                     }
+                    else if (REGEX_Ibph.Any(R => R.IsMatch(p.Desc)))
+                    {
+                        i_bph_ports.Add(p);
+                    }
+                    else if (REGEX_Ic.Any(R => R.IsMatch(p.Desc)))
+                    {
+                        i_c_ports.Add(p);
+                    }
+                    else if (REGEX_Ubph.Any(R => R.IsMatch(p.Desc)))
+                    {
+                        u_bph_ports.Add(p);
+                    }
+                    else if (REGEX_Ubphn.Any(R => R.IsMatch(p.Desc)))
+                    {
+                        u_bph_n_ports.Add(p);
+                    }
+                    else if (REGEX_Ic_hat.Any(R => R.IsMatch(p.Desc)))
+                    {
+                        i_cn_ports.Add (p);
+                    }
                 }
-                var info = new ACDeviceUint();
                 void AddCores(IEnumerable<Port> portList, List<List<Core>> infoList, List<string> KK_BYQ)
                 {
                     foreach (var port in portList)
@@ -317,6 +336,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         }
                     }
                 }
+                var info = new ACDeviceUint();
+
                 AddCores(u_ports, info.Group1, info.KK_BYQ_List1);
                 AddCores(u_n_ports, info.Group1, info.KK_BYQ_List1);
                 AddCores(u_x_ports, info.Group2, info.KK_BYQ_List2);
@@ -324,11 +345,43 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 AddCores(i_n_ports, info.Group3, info.KK_BYQ_List3);
                 AddCores(i_0_ports, info.Group4, info.KK_BYQ_List4);
                 AddCores(i_j_ports, info.Group5, info.KK_BYQ_List5);
-                if (info.Group1.Count == 0 && info.Group2.Count == 0 && info.Group3.Count == 0 && info.Group4.Count == 0 && info.Group5.Count == 0)
+                if (info.Group1.Count == 0 && info.Group2.Count == 0 && info.Group3.Count == 0 && info.Group4.Count == 0 && info.Group5.Count == 0 && info.Group6.Count == 0)
                 {
                     continue;
                 }
                 dictionary.Add(group.Key, info);
+                //接着分组
+                //如果I保护和I测量同时存在，Uabc就要被拆分为一组
+                if (i_ports.Any() && i_c_ports.Any())
+                {
+                   
+                    var info_measure = new ACDeviceUint();
+                    AddCores(u_ports, info_measure.Group1, info_measure.KK_BYQ_List1);
+                    AddCores(u_n_ports, info_measure.Group1, info_measure.KK_BYQ_List1);
+                    AddCores(i_c_ports, info_measure.Group3, info_measure.KK_BYQ_List3);
+                    AddCores(i_cn_ports, info_measure.Group3, info_measure.KK_BYQ_List3);
+
+                    if (info_measure.Group1.Count == 0 && info_measure.Group2.Count == 0 && info_measure.Group3.Count == 0 && info_measure.Group4.Count == 0 && info_measure.Group5.Count == 0 && info_measure.Group6.Count == 0)
+                    {
+                        continue;
+                    }
+                    dictionary.Add(group.Key+"测量", info_measure);
+                }
+                //如果U不平衡存在，也要单独分一组
+                if (u_bph_ports.Any())
+                {
+                    var info_unbalance = new ACDeviceUint();
+
+                    AddCores(u_bph_ports, info_unbalance.Group1, info_unbalance.KK_BYQ_List1);
+                    AddCores(u_bph_n_ports, info_unbalance.Group1, info_unbalance.KK_BYQ_List1);
+                    AddCores(i_bph_ports, info_unbalance.Group6, info_unbalance.KK_BYQ_List6);
+                    if (info_unbalance.Group1.Count == 0 && info_unbalance.Group2.Count == 0 && info_unbalance.Group3.Count == 0 && info_unbalance.Group4.Count == 0 && info_unbalance.Group5.Count == 0 && info_unbalance.Group6.Count == 0)
+                    {
+                        continue;
+                    }
+                    dictionary.Add(group.Key + "不平衡", info_unbalance);
+                }
+                
             }
             return dictionary;
         }
@@ -728,11 +781,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             string tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;
 
                             string tailStr1 = match.Groups[1].Value + match.Groups[2].Value + tailNumber;
-                            if (REGEX_HIGHVOLTAGE.IsMatch(tailStr1))
-                            {
-                                tailNumber = match.Groups[1].Value + match.Groups[2].Value + tailNumber;
-                            }
-                            else
+                           
                             {
                                 tailNumber = match.Groups[1].Value + tailNumber;
                             }
@@ -751,9 +800,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             var categoryResult = Desc_list
                 .GroupBy(elem =>
                 {
-                    Regex reg = new Regex(@$"(U|3U|I|3I){REGEX_HIGHVOLTAGE}?(\d{{0,2}})");
+                    Regex reg = new Regex(@$"(U|3U|I|3I)(\d{{0,2}})");
                     var res = reg.Match(elem);
-                    return res.Groups[1].Value + res.Groups[2].Value;
+                    return res.Groups[1].Value;
                 }
                 ).SelectMany(group => group.Select(item => new
                 {

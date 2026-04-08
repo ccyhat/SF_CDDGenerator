@@ -2,6 +2,7 @@
 using SFTemplateGenerator.Helper.Shares.SDL;
 using SFTemplateGenerator.Processor.Interfaces;
 using SFTemplateGenerator.Processor.Interfaces.FormatAnalogQuantityInspection;
+using System.Data;
 using System.Text;
 using static SFTemplateGenerator.Helper.CodingStr.CodingStr;
 using static SFTemplateGenerator.Helper.Paths.PathSaver;
@@ -387,10 +388,15 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     if ((info.Value.Group3 != null && info.Value.Group3.Count > 0) || (info.Value.Group4 != null && info.Value.Group4.Count > 0))
                     {
 
-                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""P$cVal$mag$f"", vPsum , -1, vg_GLErrorRel);");
-                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""Q$cVal$mag$f"", vQsum , v_QErrorAbs, -1);");
-                        count += 2;
-
+                        var item = info.Value.Group3!.FirstOrDefault();
+                        var source = GetBoardPort(item!);
+                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                        if (!para.Contains("保护"))//保护电流不测试PQ
+                        {
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""P$cVal$mag$f"", vPsum , -1, vg_GLErrorRel);");
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""Q$cVal$mag$f"", vQsum , v_QErrorAbs, -1);");
+                            count += 2;
+                        }
                         sb.AppendLine(@"strshow = string.format(""nRsltJdg=%d"", nRsltJdg);");
                         sb.AppendLine(@"ShowMsg(strshow);");
                     }
@@ -472,9 +478,15 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     if ((info.Value.Group3 != null && info.Value.Group3.Count > 0) || (info.Value.Group4 != null && info.Value.Group4.Count > 0))
                     {
 
-                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""P$cVal$mag$f"", vPsum , -1, vg_GLErrorRel);");
-                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""Q$cVal$mag$f"", vQsum , v_QErrorAbs, -1);");
-                        count += 2;
+                        var item = info.Value.Group3!.FirstOrDefault();
+                        var source = GetBoardPort(item!);
+                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                        if (!para.Contains("保护")){//保护电流不测试PQ
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""P$cVal$mag$f"", vPsum , -1, vg_GLErrorRel);");
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""Q$cVal$mag$f"", vQsum , v_QErrorAbs, -1);");
+                            count += 2;
+                        }
+                           
 
                         sb.AppendLine(@"strshow = string.format(""nRsltJdg=%d"", nRsltJdg);");
                         sb.AppendLine(@"ShowMsg(strshow);");
@@ -739,9 +751,14 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     }
                     if ((info.Value.Group3 != null && info.Value.Group3.Count > 0) || (info.Value.Group4 != null && info.Value.Group4.Count > 0))
                     {
-                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""P$cVal$mag$f"", vPsum , -1, vg_GLErrorRel);");
-                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""Q$cVal$mag$f"", vQsum , v_QErrorAbs, -1);");
-                        count += 2;
+                        var item = info.Value.Group3!.FirstOrDefault();
+                        var source = GetBoardPort(item!);
+                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                        if (!para.Contains("保护")){//保护电流不测试PQ                       
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""P$cVal$mag$f"", vPsum , -1, vg_GLErrorRel);");
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""Q$cVal$mag$f"", vQsum , v_QErrorAbs, -1);");
+                            count += 2;
+                        }
                         sb.AppendLine(@"strshow = string.format(""nRsltJdg=%d"", nRsltJdg);");
                         sb.AppendLine(@"ShowMsg(strshow);");
                     }
@@ -817,11 +834,14 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     }
                     if ((info.Value.Group3 != null && info.Value.Group3.Count > 0) || (info.Value.Group4 != null && info.Value.Group4.Count > 0))
                     {
-
-                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""P$cVal$mag$f"", vPsum , -1, vg_GLErrorRel);");
-                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""Q$cVal$mag$f"", vQsum , v_QErrorAbs, -1);");
-                        count += 2;
-
+                        var item = info.Value.Group3!.FirstOrDefault();
+                        var source = GetBoardPort(item!);
+                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                        if (!para.Contains("保护")){//保护电流不测试PQ
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""P$cVal$mag$f"", vPsum , -1, vg_GLErrorRel);");
+                            sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""Q$cVal$mag$f"", vQsum , v_QErrorAbs, -1);");
+                            count += 2;
+                        }                       
                         sb.AppendLine(@"strshow = string.format(""nRsltJdg=%d"", nRsltJdg);");
                         sb.AppendLine(@"ShowMsg(strshow);");
                     }

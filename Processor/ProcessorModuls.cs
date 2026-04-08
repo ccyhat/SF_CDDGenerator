@@ -121,9 +121,17 @@ namespace SFTemplateGenerator.Processor
             builder.RegisterType<SwitchTest>()
                 .As<ISwitchTest>()
                 .InstancePerDependency();
+         
+            // 注册普通版本（指定名称）
             builder.RegisterType<VoltageCheck>()
-              .As<IVoltageCheck>()
-              .InstancePerDependency();
+                .Named<IVoltageCheck>("Normal")
+                .InstancePerDependency();
+
+            // 注册6U版本（指定名称）
+            builder.RegisterType<VoltageCheck_6U>()
+                .Named<IVoltageCheck>("6U")
+                .InstancePerDependency();
+
             builder.RegisterType<UpdateRatedValue>()
                 .As<IUpdateRatedValue>()
                 .InstancePerDependency();
@@ -196,8 +204,13 @@ namespace SFTemplateGenerator.Processor
             builder.RegisterType<FormatOperationCircuitTest>()
               .As<IFormatOperationCircuitTest>()
               .InstancePerDependency();
+            // 鹈砺重??（芘髯鼹茆）
             builder.RegisterType<OperationCirucuitProcess>()
-                .As<IOperationCirucuitProcess>()
+                .Named<IOperationCirucuitProcess>("Normal")
+                .InstancePerDependency();
+            // 鹈砺重??（6U 鼹茆）
+            builder.RegisterType<OperationCircuitProcess_6U>()
+                .Named<IOperationCirucuitProcess>("6U")
                 .InstancePerDependency();
         }
         private void LoadTimeSynchronizationTest(ContainerBuilder builder)
