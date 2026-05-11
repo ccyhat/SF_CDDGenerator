@@ -11,9 +11,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
     public class ACDeviceUint
     {
         public List<List<Core>> Group1 { get; set; } = new List<List<Core>>(); // Un
-        public List<List<Core>> Group2 { get; set; } = new List<List<Core>>(); // Ux
+        public List<List<Core>> Group2 { get; set; } = new List<List<Core>>(); // Ux+Us电源电压
         public List<List<Core>> Group3 { get; set; } = new List<List<Core>>(); // In
-        public List<List<Core>> Group4 { get; set; } = new List<List<Core>>(); // I0
+        public List<List<Core>> Group4 { get; set; } = new List<List<Core>>(); // I0+Is电源电流
         public List<List<Core>> Group5 { get; set; } = new List<List<Core>>(); // IJ
         public List<List<Core>> Group6 { get; set; } = new List<List<Core>>(); // Ibph
         public List<string> KK_BYQ_List1 { get; set; } = new List<string>(); // KK_BYQ

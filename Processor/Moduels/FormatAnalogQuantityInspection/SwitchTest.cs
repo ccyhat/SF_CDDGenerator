@@ -235,6 +235,25 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 
                         }
                     }
+                    if (info.Value.Group6 != null && info.Value.Group6.Count > 0)//I不平衡
+                    {
+                        foreach (var item in info.Value.Group6.GetRange(0, 1))
+                        {
+                            var source = GetBoardPort(item);
+                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            if (info.Value.KK_BYQ_List6.Where(L => L.Contains("KK")).Count() == 0)
+                            {
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {U_param[0]}, -1, vg_MRUErrorRel); ");
+                                count++;
+                            }
+                            else
+                            {
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", 0, vg_U1VErrorAbs, -1); ");
+                                count++;
+                            }
+
+                        }
+                    }
                     if (info.Value.Group1 != null && info.Value.Group1.Count == 0)//如果没有电压通道，电流测试需要前置
                     {
                         if (info.Value.Group3 != null && info.Value.Group3.Count > 0)

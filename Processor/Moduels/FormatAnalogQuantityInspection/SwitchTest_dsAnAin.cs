@@ -283,6 +283,24 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 
                         }
                     }
+                    if(info.Value.Group6 != null && info.Value.Group6.Count > 0)//I不平衡
+                    {
+                        foreach (var item in info.Value.Group6.GetRange(0, 1))
+                        {
+                            var source = GetBoardPort(item);
+                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            if (info.Value.KK_BYQ_List6.Where(L => L.Contains("KK")).Count() == 0)
+                            {
+                                //如果没有UABC，Ux没法分析角度，因此Ux测试后移到，Uabc的KK闭合后。
+                            }
+                            else
+                            {
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", 0, vg_U1VErrorAbs, -1); ");
+                                count++;
+                            }
+
+                        }
+                    }
                     if (info.Value.Group1 != null && info.Value.Group1.Count == 0)//如果没有电压通道，电流测试需要前置
                     {
                         if (info.Value.Group3 != null && info.Value.Group3.Count > 0)
@@ -525,13 +543,13 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     }
                 }
                 if (info.Value.Group4 != null && info.Value.Group4.Count > 0)
-                {
-                    foreach (var item in info.Value.Group4.GetRange(0, 1))
-                    {
-                        var source = GetBoardPort(item);
+                {                  
+                    for (int i = 0; i < info.Value.Group4.Count / 2; i++)
+                    {                        
+                        var source = GetBoardPort(info.Value.Group4[i*2]);
                         var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
-                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, -1, vg_MRIErrorRel); ");
-                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[0]}, vg_MRIAngErrorAbs, -1); ");
+                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[i]}, -1, vg_MRIErrorRel); ");
+                        sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$ang$f"", {Angle[i]}, vg_MRIAngErrorAbs, -1); ");
                         count += 2;
                     }
                 }
