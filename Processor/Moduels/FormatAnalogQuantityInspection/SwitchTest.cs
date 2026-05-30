@@ -6,7 +6,6 @@ using System.Data;
 using System.Text;
 using static SFTemplateGenerator.Helper.CodingStr.CodingStr;
 using static SFTemplateGenerator.Helper.Paths.PathSaver;
-using static SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection.FormatAnalogQuantityInspection;
 namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 {
 
@@ -185,14 +184,19 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             {
                 StringBuilder sb = new StringBuilder();
                 {
+                    sb.AppendLine(
+                    "local vg_EDCurrent = GetTestPara(\"MRIn\"); --额定电流\r\n" +
+                    "local vg_GLErrorRel = GetTestPara(\"g_GLErrorRel\"); --功率相对误差\r\n" +
+                    "local vQsum = GetReportValue(\"..\\\\\", \"Qsum\"); --总无功功率\r\n" +
+                    "local vPsum = GetReportValue(\"..\\\\\", \"Psum\"); --总有功功率\r\n" +
+                    "local v_QErrorAbs = vg_EDCurrent*0.865;");
                     int count = 0;
                     if (info.Value.Group1 != null && info.Value.Group1.Count > 0)
                     {
                         foreach (var item in info.Value.Group1.GetRange(0, 3))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
-
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             if (info.Value.KK_BYQ_List1.Where(L => L.Contains("KK")).Count() == 0)
                             {
                                 if (info.Value.KK_BYQ_List1.Where(L => L.Contains("BYQ")).Count() != 0)
@@ -221,7 +225,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         foreach (var item in info.Value.Group2.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             if (info.Value.KK_BYQ_List2.Where(L => L.Contains("KK")).Count() == 0)
                             {
                                 sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {U_param[0]}, -1, vg_MRUErrorRel); ");
@@ -235,26 +239,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 
                         }
                     }
-                    if (info.Value.Group6 != null && info.Value.Group6.Count > 0)//I不平衡
-                    {
-                        foreach (var item in info.Value.Group6.GetRange(0, 1))
-                        {
-                            var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
-                            if (info.Value.KK_BYQ_List6.Where(L => L.Contains("KK")).Count() == 0)
-                            {
-                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {U_param[0]}, -1, vg_MRUErrorRel); ");
-                                count++;
-                            }
-                            else
-                            {
-                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", 0, vg_U1VErrorAbs, -1); ");
-                                count++;
-                            }
-
-                        }
-                    }
-                    if (info.Value.Group1 != null && info.Value.Group1.Count == 0)//如果没有电压通道，电流测试需要前置
+                    
+                    if ( !info.Value.KK_BYQ_List1.Any() || !info.Value.KK_BYQ_List2.Any())//如果没有电压通道，电流测试需要前置
                     {
                         if (info.Value.Group3 != null && info.Value.Group3.Count > 0)
                         {
@@ -262,7 +248,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             {
                                 var item = info.Value.Group3[i];
                                 var source = GetBoardPort(item);
-                                var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                                var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                                 sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[i]}, -1, vg_MRIErrorRel); ");
                                 count++;
                             }
@@ -272,7 +258,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             foreach (var item in info.Value.Group4.GetRange(0, 1))
                             {
                                 var source = GetBoardPort(item);
-                                var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                                var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                                 sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, -1, vg_MRIErrorRel); ");
                                 count++;
                             }
@@ -282,10 +268,25 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             foreach (var item in info.Value.Group5.GetRange(0, 1))
                             {
                                 var source = GetBoardPort(item);
-                                var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                                var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                                 sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, -1, vg_MRIErrorRel); ");
                                 count++;
                             }
+                        }
+                        if ((info.Value.Group3 != null && info.Value.Group3.Count > 0) || (info.Value.Group4 != null && info.Value.Group4.Count > 0))
+                        {
+                            var item = info.Value.Group3!.FirstOrDefault();
+                            var source = GetBoardPort(item!);
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
+                            if (!para.Contains("保护"))
+                            {//保护电流不测试PQ
+                             
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""P$cVal$mag$f"", vPsum , -1, vg_GLErrorRel);");
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""Q$cVal$mag$f"", vQsum , v_QErrorAbs, -1);");
+                                count += 2;
+                            }
+                            sb.AppendLine(@"strshow = string.format(""nRsltJdg=%d"", nRsltJdg);");
+                            sb.AppendLine(@"ShowMsg(strshow);");
                         }
                     }
 
@@ -320,8 +321,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     sb.AppendLine(
                         "local vg_EDCurrent = GetTestPara(\"MRIn\"); --额定电流\r\n" +
                         "local vg_GLErrorRel = GetTestPara(\"g_GLErrorRel\"); --功率相对误差\r\n" +
-                        "local vQsum = GetReportValue(\"\"..\\\\\"\", \"\"Qsum\"\"); --总无功功率\r\n" +
-                        "local vPsum = GetReportValue(\"\"..\\\\\"\", \"\"Psum\"\"); --总有功功率\r\n" +
+                        "local vQsum = GetReportValue(\"..\\\\\", \"Qsum\"); --总无功功率\r\n" +
+                        "local vPsum = GetReportValue(\"..\\\\\", \"Psum\"); --总有功功率\r\n" +
                         "local v_QErrorAbs = vg_EDCurrent*0.865;");
 
                     if (info.Value.KK_BYQ_List1.Where(L => L.Contains("BYQ")).Count() != 0)
@@ -336,7 +337,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         {
                             var item = info.Value.Group1[i];
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             if (info.Value.KK_BYQ_List1.Where(L => L.Contains("KK")).Count() != 0)
                             {
                                 if (info.Value.KK_BYQ_List1.Where(L => L.Contains("BYQ")).Count() != 0)
@@ -357,7 +358,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         foreach (var item in info.Value.Group2.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             if ((info.Value.KK_BYQ_List1.Where(L => L.Contains("KK")).Count() + info.Value.KK_BYQ_List2.Where(L => L.Contains("KK")).Count()) != 2)
                             {
                                 if (info.Value.KK_BYQ_List2.Where(L => L.Contains("KK")).Count() == 1)
@@ -373,12 +374,12 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     sb.AppendLine("ShowMsg(strshow);");
                     sb.AppendLine();
                     if (info.Value.Group3 != null && info.Value.Group3.Count > 0)
-                    {     
+                    {
                         for (int i = 0; i < Math.Min(3, info.Value.Group3.Count); i++)
                         {
                             var item = info.Value.Group3[i];
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[i]}, -1, vg_MRIErrorRel); ");
                             count++;
                         }
@@ -388,7 +389,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         foreach (var item in info.Value.Group4.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, -1, vg_MRIErrorRel); ");
                             count++;
                         }
@@ -398,18 +399,19 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         foreach (var item in info.Value.Group5.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, -1, vg_MRIErrorRel); ");
 
                             count++;
                         }
                     }
+                   
                     if ((info.Value.Group3 != null && info.Value.Group3.Count > 0) || (info.Value.Group4 != null && info.Value.Group4.Count > 0))
                     {
 
                         var item = info.Value.Group3!.FirstOrDefault();
                         var source = GetBoardPort(item!);
-                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                        var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                         if (!para.Contains("保护"))//保护电流不测试PQ
                         {
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""P$cVal$mag$f"", vPsum , -1, vg_GLErrorRel);");
@@ -449,7 +451,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         foreach (var item in info.Value.Group2.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {U_param[0]}, -1, vg_MRUErrorRel); ");
 
                             count++;
@@ -466,7 +468,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         {
                             var item = info.Value.Group3[i];
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[i]}, -1, vg_MRIErrorRel); ");
 
                             count++;
@@ -477,7 +479,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         foreach (var item in info.Value.Group4.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, -1, vg_MRIErrorRel); ");
 
                             count++;
@@ -488,24 +490,26 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         foreach (var item in info.Value.Group5.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, -1, vg_MRIErrorRel); ");
 
                             count++;
                         }
                     }
+                    
                     if ((info.Value.Group3 != null && info.Value.Group3.Count > 0) || (info.Value.Group4 != null && info.Value.Group4.Count > 0))
                     {
 
                         var item = info.Value.Group3!.FirstOrDefault();
                         var source = GetBoardPort(item!);
-                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
-                        if (!para.Contains("保护")){//保护电流不测试PQ
+                        var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
+                        if (!para.Contains("保护"))
+                        {//保护电流不测试PQ
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""P$cVal$mag$f"", vPsum , -1, vg_GLErrorRel);");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""Q$cVal$mag$f"", vQsum , v_QErrorAbs, -1);");
                             count += 2;
                         }
-                           
+
 
                         sb.AppendLine(@"strshow = string.format(""nRsltJdg=%d"", nRsltJdg);");
                         sb.AppendLine(@"ShowMsg(strshow);");
@@ -581,7 +585,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         foreach (var item in info.Value.Group1.GetRange(0, 3))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
 
                             if (info.Value.KK_BYQ_List1.Where(L => L.Contains("KK")).Count() == 0)
                             {
@@ -611,7 +615,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         foreach (var item in info.Value.Group2.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             if (info.Value.KK_BYQ_List2.Where(L => L.Contains("KK")).Count() == 0)
                             {
                                 sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {U_param[0]}, -1, vg_MRUErrorRel); ");
@@ -625,7 +629,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 
                         }
                     }
-                    if (info.Value.Group1 != null && info.Value.Group1.Count == 0)//如果没有电压通道，电流测试需要前置
+                    if (!info.Value.KK_BYQ_List1.Any()|| !info.Value.KK_BYQ_List2.Any())//如果没有电压通道，电流测试需要前置
                     {
                         if (info.Value.Group3 != null && info.Value.Group3.Count > 0)
                         {
@@ -633,7 +637,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             {
                                 var item = info.Value.Group3[i];
                                 var source = GetBoardPort(item);
-                                var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                                var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                                 sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[i]}, -1, vg_MRIErrorRel); ");
                                 count++;
                             }
@@ -643,7 +647,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             foreach (var item in info.Value.Group4.GetRange(0, 1))
                             {
                                 var source = GetBoardPort(item);
-                                var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                                var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                                 sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, -1, vg_MRIErrorRel); ");
                                 count++;
                             }
@@ -653,10 +657,24 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             foreach (var item in info.Value.Group5.GetRange(0, 1))
                             {
                                 var source = GetBoardPort(item);
-                                var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                                var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                                 sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, -1, vg_MRIErrorRel); ");
                                 count++;
                             }
+                        }
+                        if ((info.Value.Group3 != null && info.Value.Group3.Count > 0) || (info.Value.Group4 != null && info.Value.Group4.Count > 0))
+                        {
+                            var item = info.Value.Group3!.FirstOrDefault();
+                            var source = GetBoardPort(item!);
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
+                            if (!para.Contains("保护"))
+                            {//保护电流不测试PQ                       
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""P$cVal$mag$f"", vPsum , -1, vg_GLErrorRel);");
+                                sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""Q$cVal$mag$f"", vQsum , v_QErrorAbs, -1);");
+                                count += 2;
+                            }
+                            sb.AppendLine(@"strshow = string.format(""nRsltJdg=%d"", nRsltJdg);");
+                            sb.AppendLine(@"ShowMsg(strshow);");
                         }
                     }
                     sb.AppendLine();
@@ -688,8 +706,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     sb.AppendLine(
                         "local vg_EDCurrent = GetTestPara(\"MRIn\"); --额定电流\r\n" +
                         "local vg_GLErrorRel = GetTestPara(\"g_GLErrorRel\"); --功率相对误差\r\n" +
-                        "local vQsum = GetReportValue(\"\"..\\\\\"\", \"\"Qsum\"\"); --总无功功率\r\n" +
-                        "local vPsum = GetReportValue(\"\"..\\\\\"\", \"\"Psum\"\"); --总有功功率\r\n" +
+                        "local vQsum = GetReportValue(\"..\\\\\", \"Qsum\"); --总无功功率\r\n" +
+                        "local vPsum = GetReportValue(\"..\\\\\", \"Psum\"); --总有功功率\r\n" +
                         "local v_QErrorAbs = vg_EDCurrent*0.865;");
                     if (info.Value.KK_BYQ_List1.Where(L => L.Contains("BYQ")).Count() != 0)
                     {
@@ -702,7 +720,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         {
                             var item = info.Value.Group1[i];
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             if (info.Value.KK_BYQ_List1.Where(L => L.Contains("KK")).Count() != 0)
                             {
                                 if (info.Value.KK_BYQ_List1.Where(L => L.Contains("BYQ")).Count() != 0)
@@ -723,7 +741,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         foreach (var item in info.Value.Group2.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             if ((info.Value.KK_BYQ_List1.Where(L => L.Contains("KK")).Count() + info.Value.KK_BYQ_List2.Where(L => L.Contains("KK")).Count()) != 2)
                             {
                                 if (info.Value.KK_BYQ_List2.Where(L => L.Contains("KK")).Count() == 1)
@@ -743,7 +761,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         {
                             var item = info.Value.Group3[i];
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[i]}, -1, vg_MRUErrorRel); ");
                             count++;
                         }
@@ -753,7 +771,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         foreach (var item in info.Value.Group4.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, -1, vg_MRUErrorRel); ");
                             count++;
                         }
@@ -763,17 +781,19 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         foreach (var item in info.Value.Group5.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, -1, vg_MRUErrorRel); ");
                             count++;
                         }
                     }
+                  
                     if ((info.Value.Group3 != null && info.Value.Group3.Count > 0) || (info.Value.Group4 != null && info.Value.Group4.Count > 0))
                     {
                         var item = info.Value.Group3!.FirstOrDefault();
                         var source = GetBoardPort(item!);
-                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
-                        if (!para.Contains("保护")){//保护电流不测试PQ                       
+                        var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
+                        if (!para.Contains("保护"))
+                        {//保护电流不测试PQ                       
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""P$cVal$mag$f"", vPsum , -1, vg_GLErrorRel);");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""Q$cVal$mag$f"", vQsum , v_QErrorAbs, -1);");
                             count += 2;
@@ -810,7 +830,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         foreach (var item in info.Value.Group2.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {U_param[0]}, -1, vg_MRUErrorRel); ");
                             count++;
                         }
@@ -826,7 +846,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         {
                             var item = info.Value.Group3[i];
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[i]}, -1, vg_MRUErrorRel); ");
                             count++;
                         }
@@ -836,7 +856,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         foreach (var item in info.Value.Group4.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[0]}, -1, vg_MRUErrorRel); ");
                             count++;
                         }
@@ -846,21 +866,23 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         foreach (var item in info.Value.Group5.GetRange(0, 1))
                         {
                             var source = GetBoardPort(item);
-                            var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+                            var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""{para}$cVal$mag$f"", {I_param[1]}, -1, vg_MRUErrorRel); ");
                             count++;
                         }
                     }
+                    
                     if ((info.Value.Group3 != null && info.Value.Group3.Count > 0) || (info.Value.Group4 != null && info.Value.Group4.Count > 0))
                     {
                         var item = info.Value.Group3!.FirstOrDefault();
                         var source = GetBoardPort(item!);
-                        var para = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
-                        if (!para.Contains("保护")){//保护电流不测试PQ
+                        var para = _deviceModelKeeper.deviceModelCache.GetDecs(source.Item1, source.Item2, "dsAin");
+                        if (!para.Contains("保护"))
+                        {//保护电流不测试PQ
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""P$cVal$mag$f"", vPsum , -1, vg_GLErrorRel);");
                             sb.AppendLine($@"nRsltJdg = nRsltJdg + CalAinError(""Q$cVal$mag$f"", vQsum , v_QErrorAbs, -1);");
                             count += 2;
-                        }                       
+                        }
                         sb.AppendLine(@"strshow = string.format(""nRsltJdg=%d"", nRsltJdg);");
                         sb.AppendLine(@"ShowMsg(strshow);");
                     }

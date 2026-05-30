@@ -37,7 +37,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
         public async Task<bool> FailAlarmTestAsync(SDL sdl, Items root)
         {
             //获取电源插件
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => POWERBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).ToList();
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => POWERBORAD_REGEX.Any(R => R.IsMatch(B.Desc))).ToList();
             List<FailPort> failportList = new List<FailPort>();
             List<PowerCoreInfo> powerportList = new List<PowerCoreInfo>();
             //循环添加
@@ -47,7 +47,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
                 var firstFailPortInfo = new PowerCoreInfo((_targetDeviceKeeper.TargetDevice, boards[i], failports.FirstOrDefault()));
                 var lastFailPortInfo = new PowerCoreInfo((_targetDeviceKeeper.TargetDevice, boards[i], failports.LastOrDefault()));
                 failportList.Add(new FailPort(firstFailPortInfo, lastFailPortInfo));
-                var powerports = boards[i].Ports.Where(P => REGEX_POWER.Any(R=>R.IsMatch(P.Desc)));
+                var powerports = boards[i].Ports.Where(P => REGEX_POWER.Any(R => R.IsMatch(P.Desc)));
                 foreach (var port in powerports)
                 {
                     powerportList.Add(new PowerCoreInfo((_targetDeviceKeeper.TargetDevice, boards[i], port)));
@@ -60,7 +60,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
             }
             foreach (var powerport in powerportList)
             {
-                GetFarCore(sdl, powerport.StartPort.Item1, powerport.StartPort.Item2, powerport.StartPort.Item3, new List<Core>(), powerport.cores);
+                List<List<Core>> lines = new List<List<Core>>();              
+                GetAllLines(sdl, powerport.StartPort.Item1, powerport.StartPort.Item2, powerport.StartPort.Item3, new List<Core>(), lines);
+                powerport.cores = GetTargetLine(lines);
             }
             RemoveNoConnection(failportList);
             PowerPort powerPort = new PowerPort(powerportList.FirstOrDefault(), powerportList.LastOrDefault());
@@ -167,6 +169,81 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
             }
             return false;
         }
+        private void GetAllLines(SDL sdl, Device target, Board board, Port port, List<Core> line, List<List<Core>> totalLines)
+        {
+            GetAllLines(sdl, target.Name, board.Name, port.Name, line, totalLines);
+        }
+        private void GetAllLines(SDL sdl, string deviceName,
+        string boardName,
+        string portName,
+        List<Core> currentLine,
+        List<List<Core>> lines)
+        {
+            var totalCores = sdl.Cubicle.Cores.ToList();
+            var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == deviceName);
+            List<Core> nextCores = null!;
+            if (device == null)
+            {
+                if (currentLine.Count > 0)
+                {
+                    lines.Add(new List<Core>(currentLine));
+                    return;
+                }
+            }
+            if (device.Class.Equals("TD"))
+            {
+                nextCores = totalCores.Except(currentLine).Where(c =>
+               ((c.DeviceA == deviceName && c.BoardA == boardName) ||
+               (c.DeviceB == deviceName && c.BoardB == boardName)) &&
+               !(c.DeviceA == c.DeviceB && c.BoardA == c.BoardB)).ToList();//排除自己连接自己的短连片
+            }
+            else
+            {
+                nextCores = totalCores.Except(currentLine).Where(c =>
+                (c.DeviceA == deviceName && c.BoardA == boardName && c.PortA == portName) ||
+                (c.DeviceB == deviceName && c.BoardB == boardName && c.PortB == portName)).ToList();
+            }
+            if (nextCores.Count == 0 || device.Class.Equals("IED"))
+            {
+                if (currentLine.Count > 0)
+                {
+                    lines.Add(new List<Core>(currentLine));
+                    return;
+                }
+            }
+            foreach (var core in nextCores)
+            {
+                List<Core> newLine = new List<Core>(currentLine);
+                newLine.Add(core);
+                Tuple<string, string, string> anotherPort = GetAnotherPort(sdl, core, deviceName, boardName, portName);
+                GetAllLines(sdl, anotherPort.Item1, anotherPort.Item2, anotherPort.Item3, newLine, lines);
+            }
+        }
+        private List<Core> GetTargetLine(List<List<Core>> lines)
+        {
+            
+            foreach (var line in lines)
+            {
+                foreach (var core in line)
+                {
+                    var deviceA = _sDLKeeper.SDL.Cubicle.Devices.FirstOrDefault(d => d.Name == core.DeviceA);
+                    var deviceB = _sDLKeeper.SDL.Cubicle.Devices.FirstOrDefault(d => d.Name == core.DeviceB);
+                    if (deviceA != null && deviceB != null)
+                    {
+                        if (deviceA.Class.Equals("KK") || deviceB.Class.Equals("KK"))
+                        {
+                          return line;
+
+                        }
+                    }
+                }
+            }
+            if (lines.FirstOrDefault() != null)
+            {
+                return lines.FirstOrDefault().ToList();
+            }
+            return null;
+        }
         private Tuple<string, string, string> GetAnotherPort(SDL sdl, Core core, string deviceName, string boardName, string portName)
         {
             string AnotherDevice = "";
@@ -201,6 +278,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPowerPluginTest
         string portName)
         {
             if (deviceName == _targetDeviceKeeper.TargetDevice.Name)
+            {
+                return false;
+            }
+            if (deviceName.Contains("K"))
             {
                 return false;
             }

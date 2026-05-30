@@ -4,12 +4,9 @@ using SFTemplateGenerator.Helper.Shares.SDL;
 using SFTemplateGenerator.Processor.Interfaces;
 using SFTemplateGenerator.Processor.Interfaces.FormatAnalogQuantityInspection;
 using System.Text;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 using static SFTemplateGenerator.Helper.Constants.CDDRegex;
 using static SFTemplateGenerator.Helper.Paths.PathSaver;
-using static SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection.FormatAnalogQuantityInspection;
 
 namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 {
@@ -22,23 +19,23 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private readonly IZeroSequenceVoltageCurrentTest _zeroSequenceVoltageCurrentTest;
         private readonly ISwitchTest_dsAnAin _switchTest_DsAnAin;
         //开关量正则表达式
-        private static readonly List<Regex> REGEX_ACPORTS = new List<Regex> { 
+        private static readonly List<Regex> REGEX_ACPORTS = new List<Regex> {
             new Regex(@"^(U|3U|I|3I)(h|l)?(a|b|c|n|x|0|j|l)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
             new Regex(@"^(U|3U|I|3I)(h|g|m|l|p|r|z|k)(\d{0,2})(a|b|c|n|x|0|j)[\`\']?$", RegexOptions.IgnoreCase),
         };
-        private static readonly List<Regex> REGEX_Uabc = new List<Regex> { 
+        private static readonly List<Regex> REGEX_Uabc = new List<Regex> {
             new Regex(@"^(U)(a|b|c)(\d{0,2})$", RegexOptions.IgnoreCase),
             new Regex(@"^(U)(h|g|m|l|p|r|z|k)(\d{0,2})(a|b|c)$", RegexOptions.IgnoreCase),
         };
-        private static readonly List<Regex> REGEX_Un = new List<Regex> { 
+        private static readonly List<Regex> REGEX_Un = new List<Regex> {
             new Regex(@"^(U)(n)(\d{0,2})$", RegexOptions.IgnoreCase),
             new Regex(@"^(U)(h|g|m|l|p|r|z|k)(\d{0,2})(n)$", RegexOptions.IgnoreCase),
         };
-        private static readonly List<Regex> REGEX_Uabc_hat = new List<Regex> { 
+        private static readonly List<Regex> REGEX_Uabc_hat = new List<Regex> {
             new Regex(@"^(U)(c)(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
             new Regex(@"^(U)(h|g|m|l|p|r|z|k)(\d{0,2})(c)[\`\']$", RegexOptions.IgnoreCase),
         };
-        private static readonly List<Regex> REGEX_Ux = new List<Regex> { 
+        private static readonly List<Regex> REGEX_Ux = new List<Regex> {
             new Regex(@"^(3U|U)(0|x|l)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
             new Regex(@"^(3U|U)(h|g|m|l|p|r|z|k)(\d{0,2})(0|x)[\`\']?$", RegexOptions.IgnoreCase),
         };
@@ -46,7 +43,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             new Regex(@"^(I)(h|l)?(a|b|c)(\d{0,2})$", RegexOptions.IgnoreCase),
             new Regex(@"^(I)(h|g|m|l|p|r|z|k)(\d{0,2})(a|b|c)$", RegexOptions.IgnoreCase),
         };
-        private static readonly List<Regex> REGEX_In = new List<Regex> { 
+        private static readonly List<Regex> REGEX_In = new List<Regex> {
             new Regex(@"^(I)(n)(\d{0,2})$", RegexOptions.IgnoreCase),
             new Regex(@"^(I)(h|g|m|l|p|r|z|k)(\d{0,2})(n)$", RegexOptions.IgnoreCase),
         };
@@ -54,7 +51,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             new Regex(@"^(I)(h|l)?(c)(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
             new Regex(@"^(I)(h|g|m|l|p|r|z|k)(\d{0,2})(c)[\`\']$", RegexOptions.IgnoreCase),
         };
-        private static readonly List<Regex> REGEX_I0 = new List<Regex> { 
+        private static readonly List<Regex> REGEX_I0 = new List<Regex> {
             new Regex(@"^(3I|I)(0|x)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
             new Regex(@"^(3I|I)(h|g|m|l|p|r|z|k)(\d{0,2})(0|x)[\`\']?$", RegexOptions.IgnoreCase),
         };
@@ -64,7 +61,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         };
         private static readonly List<Regex> REGEX_Ibph = new List<Regex> {
             new Regex(@"^(I)(bph)(\d{0,2})[n]?$", RegexOptions.IgnoreCase),
-           
+
         };
         //guidebook正则表达式
         private static readonly Dictionary<TESTER, Regex> REGEX_TEMPLATE = new Dictionary<TESTER, Regex>() {
@@ -91,16 +88,16 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         public Task VoltageCheckProcess(SDL sdl, Items root, List<string> _nodename)
         {
             //获取交流插件
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => ACBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).OrderBy(B => B.Desc).ToList();
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => ACBORAD_REGEX.Any(R => R.IsMatch(B.Desc))).OrderBy(B => B.Desc).ToList();
             Dictionary<string, ACDeviceUint> dictionary = new Dictionary<string, ACDeviceUint>();
-            var dic_flag=GetDescListResult(boards);
+            var dic_flag = GetDescListResult(boards);
             //循环添加
             for (int i = 0; i < boards.Count(); i++)
             {
                 var items = GetInfo(sdl, _targetDeviceKeeper.TargetDevice, boards[i], dic_flag);
                 foreach (var item in items)
                 {
-                    if(dictionary.ContainsKey(item.Key))
+                    if (dictionary.ContainsKey(item.Key))
                     {
 
                         dictionary[item.Key].Add(item.Value);
@@ -108,7 +105,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     else
                     {
                         dictionary.Add(item.Key, item.Value);
-                    }                   
+                    }
                 }
             }
             // 用更紧凑的方式按“前缀首次出现顺序 + 数字升序”排序字典
@@ -180,7 +177,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             var dictionary = new Dictionary<string, ACDeviceUint>();
             var groupedByTail = new Dictionary<string, List<Port>>();
             foreach (var p in ports)
-            {              
+            {
                 var (match, index) = REGEX_ACPORTS
                              .Select((regex, i) => (regex.Match(p.Desc), i))  // 打包：(匹配结果, 索引)
                              .FirstOrDefault(tuple => tuple.Item1.Success);      // 筛选成功的匹配
@@ -201,8 +198,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;
                         tailNumber = match.Groups[1].Value + match.Groups[2].Value + tailNumber;
                     }
-                             
-                    
+
+
                     if (flag.ContainsKey(tailNumber))
                     {
                         if (flag[tailNumber])
@@ -210,14 +207,14 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             if (index == 1)
                             {
                                 string tailStr = match.Groups[3].Value;
-                                tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : (int.Parse(tailStr) + 1).ToString(); 
-                                tailNumber =  match.Groups[2].Value + tailNumber;
+                                tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : (int.Parse(tailStr) + 1).ToString();
+                                tailNumber = match.Groups[2].Value + tailNumber;
                             }
                             else
                             {
                                 string tailStr = match.Groups[4].Value;
-                                tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : (int.Parse(tailStr) + 1).ToString(); 
-                                tailNumber =  match.Groups[2].Value + tailNumber;
+                                tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : (int.Parse(tailStr) + 1).ToString();
+                                tailNumber = match.Groups[2].Value + tailNumber;
                             }
                         }
                         else
@@ -232,9 +229,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             {
                                 string tailStr = match.Groups[4].Value;
                                 tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
-                                tailNumber =  match.Groups[2].Value + tailNumber;
+                                tailNumber = match.Groups[2].Value + tailNumber;
                             }
-                            
+
                         }
                     }
                     else
@@ -251,7 +248,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
                             tailNumber = match.Groups[2].Value + tailNumber;
                         }
-                        
+
                     }
                     // 检查字典中是否已存在该尾号的键
                     if (!groupedByTail.ContainsKey(tailNumber))
@@ -278,31 +275,39 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 var i_n_ports = new List<Port>();
                 var i_0_ports = new List<Port>();
                 var i_j_ports = new List<Port>();
-                var i_bph_ports=new List<Port>();
+                var i_bph_ports = new List<Port>();
                 foreach (var p in group.Value)
                 {
-                    if (REGEX_Uabc.Any(R => R.IsMatch(p.Desc))){
+                    if (REGEX_Uabc.Any(R => R.IsMatch(p.Desc)))
+                    {
                         u_ports.Add(p);
                     }
-                    else if (REGEX_Un.Any(R => R.IsMatch(p.Desc))){
+                    else if (REGEX_Un.Any(R => R.IsMatch(p.Desc)))
+                    {
                         u_n_ports.Add(p);
                     }
-                    else if (REGEX_Uabc_hat.Any(R => R.IsMatch(p.Desc))){
+                    else if (REGEX_Uabc_hat.Any(R => R.IsMatch(p.Desc)))
+                    {
                         u_n_ports.Add(p);
                     }
-                    else if (REGEX_Ux.Any(R => R.IsMatch(p.Desc))){
+                    else if (REGEX_Ux.Any(R => R.IsMatch(p.Desc)))
+                    {
                         u_x_ports.Add(p);
                     }
-                    else if (REGEX_Iabc.Any(R => R.IsMatch(p.Desc))){
+                    else if (REGEX_Iabc.Any(R => R.IsMatch(p.Desc)))
+                    {
                         i_ports.Add(p);
                     }
-                    else if (REGEX_In.Any(R => R.IsMatch(p.Desc))){
+                    else if (REGEX_In.Any(R => R.IsMatch(p.Desc)))
+                    {
                         i_n_ports.Add(p);
                     }
-                    else if (REGEX_Iabc_hat.Any(R => R.IsMatch(p.Desc)) && !i_n_ports.Any()){
+                    else if (REGEX_Iabc_hat.Any(R => R.IsMatch(p.Desc)) && !i_n_ports.Any())
+                    {
                         i_n_ports.Add(p);
                     }
-                    else if (REGEX_I0.Any(R => R.IsMatch(p.Desc))){
+                    else if (REGEX_I0.Any(R => R.IsMatch(p.Desc)))
+                    {
                         i_0_ports.Add(p);
                     }
                     else if (REGEX_Ij.Any(R => R.IsMatch(p.Desc)))
@@ -369,7 +374,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             List<Core> cores = null!;
             if (device.Class.Equals("TD"))
             {
-                cores = Total_cores.Except(fliter).Where(c=>c.Class!="接地" ).Where(c => c.DeviceA != "PE")
+                cores = Total_cores.Except(fliter).Where(c => c.Class != "接地").Where(c => c.DeviceA != "PE")
                     .Where(c =>
                (c.DeviceA == deviceName && c.BoardA == boardName) ||
                (c.DeviceB == deviceName && c.BoardB == boardName) &&
@@ -377,7 +382,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             else
             {
-                cores = Total_cores.Except(fliter).Where(c => c.Class!="接地").Where(c => c.DeviceA != "PE")
+                cores = Total_cores.Except(fliter).Where(c => c.Class != "接地").Where(c => c.DeviceA != "PE")
                     .Where(c =>
                 (c.DeviceA == deviceName && c.BoardA == boardName && c.PortA == portName) ||
                 (c.DeviceB == deviceName && c.BoardB == boardName && c.PortB == portName)).ToList();
@@ -414,10 +419,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             {
                 var coresFrist = cores.FirstOrDefault() ?? null!;
                 var coresLast = cores.LastOrDefault() ?? null!;
-                if(coresFrist.Class== "短连片" && coresLast.Class == "导线")
+                if (coresFrist.Class == "短连片" && coresLast.Class == "导线")
                 {
-                    coresFrist= cores.LastOrDefault() ?? null!;
-                    coresLast= cores.FirstOrDefault() ?? null!;
+                    coresFrist = cores.LastOrDefault() ?? null!;
+                    coresLast = cores.FirstOrDefault() ?? null!;
                 }
                 Tuple<string, string, string> anotherPortFirst = GetAnotherPort(sdl, coresFrist, deviceName, boardName, portName, KK_BYQ_list);
                 fliter.Add(coresFrist);
@@ -491,7 +496,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             if (deviceName == _targetDeviceKeeper.TargetDevice.Name)
             {
                 var board = _targetDeviceKeeper.TargetDevice.Boards.FirstOrDefault(B => B.Name.Equals(boardName));
-                if (board != null && ACBORAD_REGEX.Any(R=>R.IsMatch(board.Desc)))
+                if (board != null && ACBORAD_REGEX.Any(R => R.IsMatch(board.Desc)))
                 {
                     var port = board.Ports.FirstOrDefault(P => P.Name.Equals(portName));
                     return port != null && REGEX_Ux.Any(R => R.IsMatch(port.Desc));
@@ -659,7 +664,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             sb.Append("、 ");
                         }
                     }
-                    
+
                     sb.Append(".");
                 }
                 if (info.Group6 != null && info.Group6.Count() > 0)
@@ -760,7 +765,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             foreach (var board in boards)
             {
                 foreach (var port in board.Ports)
-                {                  
+                {
                     var regexs = REGEX_Uabc.Concat(REGEX_Iabc).Concat(REGEX_Uabc_hat).Concat(REGEX_Iabc_hat);
                     if (regexs.Any(R => R.IsMatch(port.Desc)))
                     {
@@ -770,7 +775,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             .FirstOrDefault(tuple => tuple.Item1.Success);      // 筛选成功的匹配
                         if (match != null && match.Success)
                         {
-                            string tailNumber=string.Empty;
+                            string tailNumber = string.Empty;
                             if (index == 1)
                             {
                                 string tailStr = match.Groups[3].Value;
@@ -783,7 +788,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                                 tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;
                                 tailNumber = match.Groups[1].Value + match.Groups[2].Value + tailNumber;
                             }
-                          
+
                             if (Desc_list.Contains(tailNumber))
                             {
                                 continue;
@@ -797,19 +802,19 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 }
             }
 
-          var categoryResult = Desc_list
-                .GroupBy(elem =>
-                {
-                    Regex reg = new Regex(@"(U|3U|I|3I)(h|g|m|l|p|r|z|k)?(\d{0,2})");
-                    var res = reg.Match(elem);
-                    return res.Groups[1].Value + res.Groups[2].Value;
-                }
-                ).SelectMany(group => group.Select(item => new
-                {
-                    item,
-                    hasZero = group.Any(elem => elem.Contains("0"))
-                }))
-             .ToDictionary(x => x.item, x => x.hasZero);
+            var categoryResult = Desc_list
+                  .GroupBy(elem =>
+                  {
+                      Regex reg = new Regex(@"(U|3U|I|3I)(h|g|m|l|p|r|z|k)?(\d{0,2})");
+                      var res = reg.Match(elem);
+                      return res.Groups[1].Value + res.Groups[2].Value;
+                  }
+                  ).SelectMany(group => group.Select(item => new
+                  {
+                      item,
+                      hasZero = group.Any(elem => elem.Contains("0"))
+                  }))
+               .ToDictionary(x => x.item, x => x.hasZero);
             return categoryResult;
         }
 

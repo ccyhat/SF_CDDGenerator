@@ -80,7 +80,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatVoltageSwitchCircuitTest
         {
             Regex comm = new Regex(@"^[UV]\w$");
             Dictionary<string, List<SwtichDODeviceEnd>> SwtichComm = new Dictionary<string, List<SwtichDODeviceEnd>>();
-            var boards = device.Boards.Where(B => SWITCHBORAD_REGEX.Any(R=>R.IsMatch(B.Desc)));
+            var boards = device.Boards.Where(B => SWITCHBORAD_REGEX.Any(R => R.IsMatch(B.Desc)));
             foreach (var board in boards)
             {
                 foreach (var port in board.Ports)
@@ -166,7 +166,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatVoltageSwitchCircuitTest
             Tuple<string, string> IBusbarNO = FindDIPort(REGEX_IBusbarNO);
             Tuple<string, string> IIBusbarNO = FindDIPort(REGEX_IIBusbarNO);
             var item_action = root.GetItems().FirstOrDefault(I => I.Name.Equals("切换器同时动作（合格）")).Clone();
-            if (item_action != null&& action_pairs.Any())
+            if (item_action != null && action_pairs.Any())
             {
                 item_action.Name = $"切换器同时动作";
                 {
@@ -196,7 +196,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatVoltageSwitchCircuitTest
                 _nodename.Add(item_action.Name);
             }
             var item_disapear = root.GetItems().FirstOrDefault(I => I.Name.Equals("切换器直流消失（合格）")).Clone();
-            if (item_disapear != null&& disapear_pairs.Any())
+            if (item_disapear != null && disapear_pairs.Any())
             {
                 item_disapear.Name = $"切换器直流消失";
                 {
@@ -226,15 +226,15 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatVoltageSwitchCircuitTest
                 _nodename.Add(item_disapear.Name);
             }
         }
-        
-       
+
+
         private Dictionary<string, List<SwtichDODeviceEnd>> RemoveNoConnection(Dictionary<string, List<SwtichDODeviceEnd>> dict)
         {
-            foreach(var currentKvp in dict)
+            foreach (var currentKvp in dict)
             {
                 foreach (var deviceEnd in currentKvp.Value)
                 {
-                    GetFarCore(_sDLKeeper.SDL, deviceEnd.StartPort.Item1, deviceEnd.StartPort.Item2, deviceEnd.StartPort.Item3, new List<Core>(), deviceEnd.cores);                   
+                    GetFarCore(_sDLKeeper.SDL, deviceEnd.StartPort.Item1, deviceEnd.StartPort.Item2, deviceEnd.StartPort.Item3, new List<Core>(), deviceEnd.cores);
                 }
             }
             // 筛选出符合条件的键值对：值列表中cores有效（不为null且数量>0）的元素刚好有2个
@@ -378,10 +378,11 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatVoltageSwitchCircuitTest
             foreach (var device in devices)
             {
                 var board = device.Boards.FirstOrDefault(B => REGEX_POSITIVE.Any(R => R.IsMatch(B.Desc)));
-                if (board != null) {
+                if (board != null)
+                {
                     return new Tuple<string, string>(device.Name, board.Name);
                 }
-               
+
             }
             return new Tuple<string, string>("", "");
         }

@@ -8,7 +8,8 @@
             "local vg_CLUAngErrorAbs = GetTestPara(\"g_CLUAngErrorAbs\"); --测量电压角度绝对误差，测量电压判角度时，CalAinError的第三个参数用它\r\n\r\n" +
             "local vMRIn = GetTestPara(\"MRIn\"); --模入电流额定CT值，非测量电流通道时，CalAinError的第二个参数填它\r\n" +
             "local vCLIn = GetTestPara(\"CLIn\"); --测量电流额定CT值，测量电流通道时，CalAinError的第二个参数填它\r\n\r\n" +
-            "local vg_MRUErrorAbs = GetTestPara(\"g_MRUErrorAbs\"); --模入电压绝对误差，非测量电压且基准值不为0时，CalAinError的第三个参数用它\r\n" +
+            "local vg_MRUErrorAbs = GetTestPara(\"g_MRUErrorAbs\"); --模入电压绝对误差，非测量电压且基准值不为0时，CalAinError的第三个参数用它\r\n" +       
+            "local vg_MRUErrorRel = GetTestPara(\"g_MRUErrorRel\"); --模入电压相对误差，非测量电压且基准值不为0时，CalAinError的第三个参数用它\r\n" +
             "local vg_MRUAngErrorAbs = GetTestPara(\"g_MRUAngErrorAbs\"); --模入电压角度绝对误差，非测量电压判角度时，CalAinError的第三个参数用它\r\n" +
             "local vg_MRIErrorRel = GetTestPara(\"g_MRIErrorRel\"); --模入电流绝对误差，非测量电流时，CalAinError的第三个参数用它\r\n" +
             "local vg_MRIAngErrorAbs = GetTestPara(\"g_MRIAngErrorAbs\"); --模入电流角度绝对误差，非测量电流判角度时，CalAinError的第三个参数用它\r\n" +

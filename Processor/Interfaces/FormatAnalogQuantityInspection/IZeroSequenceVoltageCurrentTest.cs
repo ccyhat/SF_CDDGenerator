@@ -2,7 +2,6 @@
 using SFTemplateGenerator.Helper.Shares.SDL;
 using SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection;
 using static SFTemplateGenerator.Helper.Paths.PathSaver;
-using static SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection.FormatAnalogQuantityInspection;
 
 namespace SFTemplateGenerator.Processor.Interfaces.FormatAnalogQuantityInspection
 {

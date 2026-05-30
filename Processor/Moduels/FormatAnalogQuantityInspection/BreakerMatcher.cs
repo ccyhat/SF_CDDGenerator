@@ -5,7 +5,7 @@
         public static readonly Dictionary<string, string> notShortCircuited = new Dictionary<string, string>
     {
         // 可以在这里初始化字典内容
-        {"HQa", "A相合闸"},        
+        {"HQa", "A相合闸"},
         {"HQb", "B相合闸"},
         {"HQc", "C相合闸"},
         {"TQa", "A项跳闸"},

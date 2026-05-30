@@ -121,14 +121,14 @@ namespace SFTemplateGenerator.Processor
             builder.RegisterType<SwitchTest>()
                 .As<ISwitchTest>()
                 .InstancePerDependency();
-         
+
             // 注册普通版本（指定名称）
             builder.RegisterType<VoltageCheck>()
                 .Named<IVoltageCheck>("Normal")
                 .InstancePerDependency();
 
             // 注册6U版本（指定名称）
-            builder.RegisterType<VoltageCheck_6U>()
+            builder.RegisterType<VoltageCheck_Test>()
                 .Named<IVoltageCheck>("6U")
                 .InstancePerDependency();
 

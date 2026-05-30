@@ -1,11 +1,8 @@
 ﻿using Autofac;
-using Castle.Components.DictionaryAdapter.Xml;
-using SFTemplateGenerator.Helper.Constants;
 using SFTemplateGenerator.Helper.Logger;
 using SFTemplateGenerator.Helper.Shares.GuideBook;
 using SFTemplateGenerator.Helper.Shares.SDL;
 using SFTemplateGenerator.Processor.Interfaces.FormatAnalogQuantityInspection;
-using System.Text.RegularExpressions;
 using static SFTemplateGenerator.Helper.Constants.CDDRegex;
 
 
@@ -17,7 +14,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 
         private readonly IPreTestChecklist _preTestChecklist;
         private readonly ILifetimeScope _lifetimeScope;
-        
+
         public FormatAnalogQuantityInspection(
             IPreTestChecklist preTestChecklist,
             ILifetimeScope lifetimeScope

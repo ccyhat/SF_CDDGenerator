@@ -32,11 +32,11 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPrepareTestProcessor
         };
         public Task ConnectTimeSynchronizationLineAsync(Device TargetDevice, SDL sdl, Items root)
         {
-            var boards = TargetDevice.Boards.Where(B => MANAGEBORAD_REGEX.Any(R=>R.IsMatch(B.Desc)));
-            foreach(var board in boards)
+            var boards = TargetDevice.Boards.Where(B => MANAGEBORAD_REGEX.Any(R => R.IsMatch(B.Desc)));
+            foreach (var board in boards)
             {
                 var ports = board.Ports.Where(P => timeSyncTypes.Any(T => T.Equals(P.Desc)));
-                if(ports.Count()>=2)
+                if (ports.Count() >= 2)
                 {
                     var tupleA = FindNearestPort(sdl, TargetDevice, board, ports.FirstOrDefault());
                     var tupleB = FindNearestPort(sdl, TargetDevice, board, ports.LastOrDefault());
@@ -46,11 +46,11 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPrepareTestProcessor
                     var template = root.GetSafetys().FirstOrDefault(S => S.Name.StartsWith("接入对时线"));
                     if (template != null)
                     {
-                        template.Name = "接入对时线";                    
-                        template.DllCall.CData = sb.ToString();                        
+                        template.Name = "接入对时线";
+                        template.DllCall.CData = sb.ToString();
                     }
                 }
-            }                      
+            }
             return Task.CompletedTask;
         }
         private Tuple<string, string, string> FindNearestPort(SDL sdl, Device device, Board board, Port port)

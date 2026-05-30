@@ -158,7 +158,7 @@ namespace SFTemplateGenerator.MainWindow.ViewModels
                         }
                     }
                 }
-                if (modelname==null)
+                if (modelname == null)
                 {
                     _notifyException.RaiseException(this, $"cdd 模板错误");
                     return;
@@ -177,7 +177,7 @@ namespace SFTemplateGenerator.MainWindow.ViewModels
                         {
                             if (board.Name == DIOPort.board && port.Name == DIOPort.port)
                             {
-                                port.PortPair = DIOPort.CollectionId;
+                                port.PortPair.AddRange( DIOPort.CollectionId);
                             }
                         }
                     }

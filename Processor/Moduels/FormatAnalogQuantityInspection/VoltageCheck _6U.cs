@@ -1,15 +1,13 @@
-﻿using SFTemplateGenerator.Helper.Logger;
+﻿using Autofac.Core;
+using SFTemplateGenerator.Helper.Logger;
 using SFTemplateGenerator.Helper.Shares.GuideBook;
 using SFTemplateGenerator.Helper.Shares.SDL;
 using SFTemplateGenerator.Processor.Interfaces;
 using SFTemplateGenerator.Processor.Interfaces.FormatAnalogQuantityInspection;
 using System.Text;
-using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
-using System.Xml.Linq;
 using static SFTemplateGenerator.Helper.Constants.CDDRegex;
 using static SFTemplateGenerator.Helper.Paths.PathSaver;
-using static SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection.FormatAnalogQuantityInspection;
 
 namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 {
@@ -26,8 +24,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             new Regex(@"^(U|3U|I|3I|Ic)(a|b|c|n|x|0|j|l|h)(\d{0,2})[n\`\']?$", RegexOptions.IgnoreCase),
             new Regex(@"^(Ubph)(a|b|c)(\d{0,2})[n]?$", RegexOptions.IgnoreCase),
             new Regex(@"^(I)(bph)(\d{0,2})[n]?$", RegexOptions.IgnoreCase),
-          
-          
+            new Regex(@"^(I0)(l|h)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Uabc = new List<Regex> {
             new Regex(@"^(U)([abc])(\d{0,2})$", RegexOptions.IgnoreCase),
@@ -39,7 +36,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             new Regex(@"^(U)([c])(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Ux = new List<Regex> {
-            new Regex(@"^(3U|U)([0x])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(3U|U)(0|x)(\d{0,2})[n\`\']?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Iabc = new List<Regex> {
             new Regex(@"^(I)(a|b|c|la)(\d{0,2})$", RegexOptions.IgnoreCase),
@@ -52,6 +49,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         };
         private static readonly List<Regex> REGEX_I0 = new List<Regex> {
             new Regex(@"^(3I|I)([0x])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+            new Regex(@"^(I0)(l|h)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_IJ = new List<Regex> {
             new Regex(@"^(3I|I)([j])(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
@@ -71,8 +69,11 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         private static readonly List<Regex> REGEX_Ic_hat = new List<Regex> {
             new Regex(@"^(Ic)(c)(\d{0,2})[\`\']$", RegexOptions.IgnoreCase),
         };
-        private static readonly List<Regex> REGEX_Is= new List<Regex> {
-             new Regex(@"^(Il|Ih)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+        private static readonly List<Regex> REGEX_Il = new List<Regex> {
+             new Regex(@"^(Il)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
+        };
+        private static readonly List<Regex> REGEX_Ih = new List<Regex> {
+             new Regex(@"^(Ih)(\d{0,2})[\`\']?$", RegexOptions.IgnoreCase),
         };
         private static readonly List<Regex> REGEX_Us = new List<Regex> {
             new Regex(@"^(Ul)(\d{0,2})[n]?$", RegexOptions.IgnoreCase),
@@ -102,16 +103,16 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         public Task VoltageCheckProcess(SDL sdl, Items root, List<string> _nodename)
         {
             //获取交流插件
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => ACBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).OrderBy(B => B.Desc).ToList();
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => ACBORAD_REGEX.Any(R => R.IsMatch(B.Desc))).OrderBy(B => B.Desc).ToList();
             Dictionary<string, ACDeviceUint> dictionary = new Dictionary<string, ACDeviceUint>();
-            var dic_flag=GetDescListResult(boards);
+            var dic_flag = GetDescListResult(boards);
             //循环添加
             for (int i = 0; i < boards.Count(); i++)
             {
                 var items = GetInfo(sdl, _targetDeviceKeeper.TargetDevice, boards[i], dic_flag);
                 foreach (var item in items)
                 {
-                    if(dictionary.ContainsKey(item.Key))
+                    if (dictionary.ContainsKey(item.Key))
                     {
 
                         dictionary[item.Key].Add(item.Value);
@@ -119,7 +120,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     else
                     {
                         dictionary.Add(item.Key, item.Value);
-                    }                   
+                    }
                 }
             }
             // 用更紧凑的方式按“前缀首次出现顺序 + 数字升序”排序字典
@@ -149,11 +150,14 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             else
             {
-                bool isdsAin = HasDsAin();
-                if (isdsAin)
+
+
+
+                int loopCount = 1;
+                foreach (var dic in dictionary)
                 {
-                    int loopCount = 1;
-                    foreach (var dic in dictionary)
+                    bool isdsAin = dic.Key.Contains("测量");
+                    if (isdsAin)
                     {
                         var item = root.GetItems().FirstOrDefault(I => REGEX_TEMPLATE[Instance.Config.Tester].IsMatch(I.Name))!.Clone();//获取电压检查模板
                         item.Name = $"电压检查（第{loopCount}组交流）";
@@ -171,11 +175,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         _nodename.Add(item.Name);
                         loopCount++;
                     }
-                }
-                else
-                {
-                    int loopCount = 1;
-                    foreach (var dic in dictionary)
+                    else
                     {
                         var item = root.GetItems().FirstOrDefault(I => REGEX_TEMPLATE[Instance.Config.Tester].IsMatch(I.Name))!.Clone();//获取电压检查模板
                         item.Name = $"电压检查（第{loopCount}组交流）";
@@ -194,7 +194,12 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         _nodename.Add(item.Name);
                         loopCount++;
                     }
+
+
                 }
+
+
+
             }
             return Task.CompletedTask;
         }
@@ -267,7 +272,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 var i_cn_ports = new List<Port>();//测量电流
                 var i_0_ports = new List<Port>();
                 var i_j_ports = new List<Port>();
-                var i_s_ports = new List<Port>();//电源电流
+                var i_l_ports = new List<Port>();//电源电流
+                var i_h_ports = new List<Port>();//电源电流
                 var u_s_ports = new List<Port>();//电源电压
                 var i_bph_ports = new List<Port>();
                 var u_bph_ports = new List<Port>();
@@ -330,9 +336,13 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     {
                         i_cn_ports.Add(p);
                     }
-                    else if(REGEX_Is.Any(R => R.IsMatch(p.Desc)))
+                    else if (REGEX_Il.Any(R => R.IsMatch(p.Desc)))
                     {
-                        i_s_ports.Add(p);
+                        i_l_ports.Add(p);
+                    }
+                    else if (REGEX_Ih.Any(R => R.IsMatch(p.Desc)))
+                    {
+                        i_h_ports.Add(p);
                     }
                     else if (REGEX_Us.Any(R => R.IsMatch(p.Desc)))
                     {
@@ -366,9 +376,11 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 AddCores(i_ports, info.Group3, info.KK_BYQ_List3);
                 AddCores(i_n_ports, info.Group3, info.KK_BYQ_List3);
                 AddCores(i_0_ports, info.Group4, info.KK_BYQ_List4);
-                AddCores(i_s_ports, info.Group4, info.KK_BYQ_List4);
+                AddCores(i_l_ports, info.Group7, info.KK_BYQ_List7);
+                AddCores(i_h_ports, info.Group8, info.KK_BYQ_List8);
                 AddCores(i_j_ports, info.Group5, info.KK_BYQ_List5);
-                if (info.Group1.Count == 0 && info.Group2.Count == 0 && info.Group3.Count == 0 && info.Group4.Count == 0 && info.Group5.Count == 0 && info.Group6.Count == 0)
+                if (info.Group1.Count == 0 && info.Group2.Count == 0 && info.Group3.Count == 0 && info.Group4.Count == 0
+                    && info.Group5.Count == 0 && info.Group6.Count == 0 && info.Group7.Count == 0 && info.Group8.Count == 0)
                 {
                     continue;
                 }
@@ -381,9 +393,12 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     var info_measure = new ACDeviceUint();
                     AddCores(u_ports, info_measure.Group1, info_measure.KK_BYQ_List1);
                     AddCores(u_n_ports, info_measure.Group1, info_measure.KK_BYQ_List1);
+                    AddCores(u_x_ports, info_measure.Group2, info_measure.KK_BYQ_List2);
+                    AddCores(u_s_ports, info_measure.Group2, info_measure.KK_BYQ_List2);
                     AddCores(i_c_ports, info_measure.Group3, info_measure.KK_BYQ_List3);
                     AddCores(i_cn_ports, info_measure.Group3, info_measure.KK_BYQ_List3);
-
+                    info_measure.KK_BYQ_List1.Clear();
+                    info_measure.KK_BYQ_List2.Clear();
                     if (info_measure.Group1.Count == 0 && info_measure.Group2.Count == 0 && info_measure.Group3.Count == 0 && info_measure.Group4.Count == 0 && info_measure.Group5.Count == 0 && info_measure.Group6.Count == 0)
                     {
                         continue;
@@ -404,7 +419,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     }
                     dictionary.Add(group.Key + "不平衡", info_unbalance);
                 }
-              
+
             }
             return dictionary;
         }
@@ -429,7 +444,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             List<Core> cores = null!;
             if (device.Class.Equals("TD"))
             {
-                cores = Total_cores.Except(fliter).Where(c=>c.Class!="接地" ).Where(c => c.DeviceA != "PE")
+                cores = Total_cores.Except(fliter).Where(c => c.Class != "接地").Where(c => c.DeviceA != "PE")
                     .Where(c =>
                (c.DeviceA == deviceName && c.BoardA == boardName) ||
                (c.DeviceB == deviceName && c.BoardB == boardName) &&
@@ -437,7 +452,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             }
             else
             {
-                cores = Total_cores.Except(fliter).Where(c => c.Class!="接地").Where(c => c.DeviceA != "PE")
+                cores = Total_cores.Except(fliter).Where(c => c.Class != "接地").Where(c => c.DeviceA != "PE")
                     .Where(c =>
                 (c.DeviceA == deviceName && c.BoardA == boardName && c.PortA == portName) ||
                 (c.DeviceB == deviceName && c.BoardB == boardName && c.PortB == portName)).ToList();
@@ -446,7 +461,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             {
                 return true;
             }
-            if (cores.Count() == 0)//是否是终端
+            var deviceflag=(device.Name != _targetDeviceKeeper.TargetDevice.Name)&& device.Class.Equals("IED");//是否连接到其他装置
+            if (cores.Count() == 0 || device.Class.Equals("JDQ")|| deviceflag)//是否是终端
             {
                 if (IsCorrectEnd(deviceName, boardName, portName))
                 {
@@ -474,10 +490,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             {
                 var coresFrist = cores.FirstOrDefault() ?? null!;
                 var coresLast = cores.LastOrDefault() ?? null!;
-                if(coresFrist.Class== "短连片" && coresLast.Class == "导线")
+                if (coresFrist.Class == "短连片" && coresLast.Class == "导线")
                 {
-                    coresFrist= cores.LastOrDefault() ?? null!;
-                    coresLast= cores.FirstOrDefault() ?? null!;
+                    coresFrist = cores.LastOrDefault() ?? null!;
+                    coresLast = cores.FirstOrDefault() ?? null!;
                 }
                 Tuple<string, string, string> anotherPortFirst = GetAnotherPort(sdl, coresFrist, deviceName, boardName, portName, KK_BYQ_list);
                 fliter.Add(coresFrist);
@@ -518,6 +534,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             var cores = sdl.Cubicle.Cores.ToList();
             //检查下一个是不是短连片
             var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == AnotherDevice)!;
+            if(device==null)
+            {
+                return new Tuple<string, string, string>(deviceName, boardName, portName);
+            }
             if (device.Class.Equals("KK"))
             {
                 if (int.TryParse(AnotherPort, out int portANumber))
@@ -542,6 +562,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     }
                 }
             }
+           
+           
             Tuple<string, string, string> tuple = new Tuple<string, string, string>(AnotherDevice, AnotherBoard, AnotherPort);
             return tuple;
         }
@@ -551,7 +573,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             if (deviceName == _targetDeviceKeeper.TargetDevice.Name)
             {
                 var board = _targetDeviceKeeper.TargetDevice.Boards.FirstOrDefault(B => B.Name.Equals(boardName));
-                if (board != null && ACBORAD_REGEX.Any(R=>R.IsMatch(board.Desc)))
+                if (board != null && ACBORAD_REGEX.Any(R => R.IsMatch(board.Desc)))
                 {
                     var port = board.Ports.FirstOrDefault(P => P.Name.Equals(portName));
                     return port != null && REGEX_Ux.Any(R => R.IsMatch(port.Desc));
@@ -564,6 +586,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             {
                 return false;
             }
+           
             // 3. 其他情况默认true
             return true;
         }
@@ -607,7 +630,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         }
                         if (i == 2)
                         {
-                            sb.Append(" Un接 ");
+                            sb.Append(" .Un接 ");
                         }
                         else if (i < info.Group1.Count() - 1)
                         {
@@ -675,11 +698,26 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 }
                 if (info.Group4 != null && info.Group4.Count() > 0)
                 {
-                    sb.Append("  I0接");
+                    var I0L=new Regex(@"^(I0)(l)(\d{0,2})$", RegexOptions.IgnoreCase);
+                    var I0H = new Regex(@"^(I0)(h)(\d{0,2})$", RegexOptions.IgnoreCase);
+                    var I0 = new Regex(@"^(3I|I)([0x])(\d{0,2})$", RegexOptions.IgnoreCase);
                     string deviceName = "";
                     for (int i = 0; i < info.Group4.Count(); i++)
                     {
                         List<Core> cores = info.Group4[i];
+                        var start_decs = GetStart(cores);
+                        if (I0L.IsMatch(start_decs))
+                        {
+                            sb.Append("  I0L接");
+                        }
+                        if (I0H.IsMatch(start_decs))
+                        {
+                            sb.Append("  I0H接");
+                        }
+                        if (I0.IsMatch(start_decs))
+                        {
+                            sb.Append("  I0接");
+                        }
                         Tuple<string, string> end_device_board = GetEND(cores);
                         if (deviceName != end_device_board.Item1)
                         {
@@ -719,7 +757,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             sb.Append("、 ");
                         }
                     }
-                    
+
                     sb.Append(".");
                 }
                 if (info.Group6 != null && info.Group6.Count() > 0)
@@ -747,6 +785,56 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 
                     sb.Append(".");
                 }
+                if (info.Group7 != null && info.Group7.Count() > 0)
+                {
+                    sb.Append("  Il接");
+                    string deviceName = "";
+                    for (int i = 0; i < info.Group7.Count(); i++)
+                    {
+                        List<Core> cores = info.Group7[i];
+                        Tuple<string, string> end_device_board = GetEND(cores);
+                        if (deviceName != end_device_board.Item1)
+                        {
+                            sb.Append($"{end_device_board.Item1}{end_device_board.Item2}");
+                            deviceName = end_device_board.Item1;
+                        }
+                        else
+                        {
+                            sb.Append($"{end_device_board.Item2}");
+                        }
+                        if (i < info.Group7.Count() - 1)
+                        {
+                            sb.Append("、 ");
+                        }
+                    }
+
+                    sb.Append(".");
+                }
+                if (info.Group8 != null && info.Group8.Count() > 0)
+                {
+                    sb.Append("  Ih接");
+                    string deviceName = "";
+                    for (int i = 0; i < info.Group8.Count(); i++)
+                    {
+                        List<Core> cores = info.Group8[i];
+                        Tuple<string, string> end_device_board = GetEND(cores);
+                        if (deviceName != end_device_board.Item1)
+                        {
+                            sb.Append($"{end_device_board.Item1}{end_device_board.Item2}");
+                            deviceName = end_device_board.Item1;
+                        }
+                        else
+                        {
+                            sb.Append($"{end_device_board.Item2}");
+                        }
+                        if (i < info.Group8.Count() - 1)
+                        {
+                            sb.Append("、 ");
+                        }
+                    }
+
+                    sb.Append(".");
+                }
                 sb.Append("  ;ExpectString=是否完成;");
                 safety.DllCall.CData = sb.ToString();
                 safety.Name = $"接入交流线(第{loopcount}组交流)";
@@ -762,14 +850,14 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 if (info.Group1 != null && info.Group1.Count() > 0)
                 {
                     string[] Phase = { "a", "b", "c" };
-                    for (int i = 0; i < info.Group1.Count()/2; i++)
+                    for (int i = 0; i < info.Group1.Count() / 2; i++)
                     {
                         sb.Append($" 不平衡电压{Phase[i]}接");
                         List<Core> cores = info.Group1[i];
-                        List<Core> cores_n = info.Group1[i+3];
+                        List<Core> cores_n = info.Group1[i + 3];
                         Tuple<string, string> end_device_board = GetEND(cores);
-                        Tuple<string, string> end_device_board_n = GetEND(cores_n);                       
-                        sb.Append($"{end_device_board.Item1}{end_device_board.Item2}、{end_device_board_n.Item2}.");                    
+                        Tuple<string, string> end_device_board_n = GetEND(cores_n);
+                        sb.Append($"{end_device_board.Item1}{end_device_board.Item2}、{end_device_board_n.Item2}.");
                     }
                 }
                 if (info.Group2 != null && info.Group2.Count() > 0)
@@ -929,7 +1017,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     DeviceName = core.DeviceA;
                     BoardName = core.BoardA;
                     var device = Devices.Where(D => D.Name.Equals(DeviceName)).FirstOrDefault()!;
-                    if (!device.Class.Equals("TD"))
+                    if (device==null||!device.Class.Equals("TD"))
                     {
                         DeviceName = core.DeviceB;
                         BoardName = core.BoardB;
@@ -960,15 +1048,29 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 return new Tuple<string, string>("", "");
             }
         }
-        private bool HasDsAin()
+        private string GetStart(List<Core> cores)
         {
-            var ldevice = _deviceModelKeeper.TargetDeviceModel.LDevices.FirstOrDefault(L => L.Name == "装置信息");
-            if (ldevice == null)
+            var core=cores.LastOrDefault();
+            var Devices = _sDLKeeper.SDL.Cubicle.Devices.ToList();
+            if (core != null)
             {
-                return false;
+                
+                var device = Devices.Where(D => D.Name.Equals(core.DeviceA)).FirstOrDefault()!;
+               
+                if (device.Class.Equals("IED"))
+                {
+                    var board=device.Boards.Where(B => B.Name.Equals(core.BoardA)).FirstOrDefault();
+                    var port=board.Ports.Where(P=>P.Name.Equals(core.PortA)).FirstOrDefault();
+                    return port.Desc;
+                }
+                else
+                {
+                   var board = device.Boards.Where(B => B.Name.Equals(core.BoardB)).FirstOrDefault();
+                    var port = board.Ports.Where(P => P.Name.Equals(core.PortB)).FirstOrDefault();
+                    return port.Desc;   
+                }
             }
-            var datset = ldevice.Datasets.FirstOrDefault(D => D.Name == "测量量");
-            return datset != null && datset.Datas.Count > 0;
+            return string.Empty;
         }
         private Dictionary<string, bool> GetDescListResult(List<Board> boards)
         {
@@ -976,7 +1078,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
             foreach (var board in boards)
             {
                 foreach (var port in board.Ports)
-                {                  
+                {
                     var regexs = REGEX_Uabc.Concat(REGEX_Iabc).Concat(REGEX_Uabc_hat).Concat(REGEX_Iabc_hat);
                     if (regexs.Any(R => R.IsMatch(port.Desc)))
                     {
@@ -986,7 +1088,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             .FirstOrDefault(tuple => tuple.Item1.Success);      // 筛选成功的匹配
                         if (match != null && match.Success)
                         {
-                            string tailNumber=string.Empty;
+                            string tailNumber = string.Empty;
                             if (index == 1)
                             {
                                 string tailStr = match.Groups[3].Value;
@@ -999,7 +1101,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                                 tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;
                                 tailNumber = match.Groups[1].Value + match.Groups[2].Value + tailNumber;
                             }
-                          
+
                             if (Desc_list.Contains(tailNumber))
                             {
                                 continue;
@@ -1013,19 +1115,19 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 }
             }
 
-          var categoryResult = Desc_list
-                .GroupBy(elem =>
-                {
-                    Regex reg = new Regex(@"(U|3U|I|3I)(h|g|m|l|p|r|z|k)?(\d{0,2})");
-                    var res = reg.Match(elem);
-                    return res.Groups[1].Value + res.Groups[2].Value;
-                }
-                ).SelectMany(group => group.Select(item => new
-                {
-                    item,
-                    hasZero = group.Any(elem => elem.Contains("0"))
-                }))
-             .ToDictionary(x => x.item, x => x.hasZero);
+            var categoryResult = Desc_list
+                  .GroupBy(elem =>
+                  {
+                      Regex reg = new Regex(@"(U|3U|I|3I)(h|g|m|l|p|r|z|k)?(\d{0,2})");
+                      var res = reg.Match(elem);
+                      return res.Groups[1].Value + res.Groups[2].Value;
+                  }
+                  ).SelectMany(group => group.Select(item => new
+                  {
+                      item,
+                      hasZero = group.Any(elem => elem.Contains("0"))
+                  }))
+               .ToDictionary(x => x.item, x => x.hasZero);
             return categoryResult;
         }
 

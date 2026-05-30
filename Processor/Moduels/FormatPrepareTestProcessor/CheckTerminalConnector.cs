@@ -120,10 +120,10 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatPrepareTestProcessor
             }
             foreach (var core in nextCores)
             {
-                if(!cores.Any(c=>c==core))
+                if (!cores.Any(c => c == core))
                 {
                     cores.Add(core);
-                }                
+                }
                 Tuple<string, string, string> anotherPort = GetAnotherPort(sdl, core, deviceName, boardName);
                 GetAllCores(sdl, anotherPort.Item1, anotherPort.Item2, cores);
             }

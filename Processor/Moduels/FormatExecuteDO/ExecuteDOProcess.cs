@@ -1,11 +1,7 @@
-﻿
-using Autofac.Core;
-using Castle.Components.DictionaryAdapter.Xml;
-using SFTemplateGenerator.Helper.Shares.GuideBook;
+﻿using SFTemplateGenerator.Helper.Shares.GuideBook;
 using SFTemplateGenerator.Helper.Shares.SDL;
 using SFTemplateGenerator.Processor.Interfaces;
 using SFTemplateGenerator.Processor.Interfaces.FormatExecuteDO;
-using SFTemplateGenerator.Processor.Moduels.FormatVoltageSwitchCircuitTest;
 using System.Text.RegularExpressions;
 using static SFTemplateGenerator.Helper.Constants.CDDRegex;
 
@@ -39,7 +35,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             new Regex(@"^连接片_XH76W4T-DKZ_红色_常州洛阳华泰$"),
         };
         private readonly List<Regex> REGEX_DOUBLE_YB_PORT1_to_PORT3 = new List<Regex> {
-            new Regex(@"^智能切换片_RSH2\.5-2S_BXRD_瑞联$"),          
+            new Regex(@"^智能切换片_RSH2\.5-2S_BXRD_瑞联$"),
         };
         private readonly Regex REGEX_4QD = new Regex(@"4Q(\d)?D");
         private readonly Regex REGEX_4YD = new Regex(@"4Y(\d)?D");
@@ -57,7 +53,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         }
         public Task ExecuteDOProcessAsync(SDL sdl, Items rootItem, List<string> NodeName)
         {
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => DOBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))|| SIGNALBORAD_REGEX.IsMatch(B.Desc) || POWERBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).ToList();//开出插件
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => DOBORAD_REGEX.Any(R => R.IsMatch(B.Desc)) || SIGNALBORAD_REGEX.IsMatch(B.Desc) || POWERBORAD_REGEX.Any(R => R.IsMatch(B.Desc))).ToList();//开出插件
             Dictionary<string, List<DODeviceEnd>> DOObjectOperation = new Dictionary<string, List<DODeviceEnd>>();
             var regexMappings = new Dictionary<Regex, Dictionary<string, List<DODeviceEnd>>>
             {
@@ -65,7 +61,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             };
             foreach (var board in boards)
             {
-                var ports = board.Ports.Where(p => p.PortPair.Any(pair => pair.Contains("DO") && !pair.Contains("tripDO")));
+                // 只匹配纯 DO 类型端口（排除 tripDO）
+                var ports = board.Ports.Where(p => p.PortPair.Any(pair => pair.StartsWith("DO_")));
                 foreach (var port in ports)
                 {
                     Match match = null;
@@ -115,15 +112,16 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             {
                 var source = GetBoard_Port_PortDesc(dODeviceEnd);
                 var PortReallDesc = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
-                if (REGEX_DOOthers.Any(R => R.IsMatch(dODeviceEnd.StartPort.Item3.Desc))|| REGEX_DOOthers.Any(R => R.IsMatch(PortReallDesc)))
+                if (REGEX_DOOthers.Any(R => R.IsMatch(dODeviceEnd.StartPort.Item3.Desc)) || REGEX_DOOthers.Any(R => R.IsMatch(PortReallDesc)))
                 {
                     Create_DO_By_Des(doDeviceEnds, rootItem);
                     return;
                 }
-                if (REGEX_6U.Any(R=>R.IsMatch(_targetDeviceKeeper.TargetDevice.Model)))//6U特殊处理
+                if (REGEX_6U.Any(R => R.IsMatch(_targetDeviceKeeper.TargetDevice.Model)))//6U特殊处理
                 {
                     List<Regex> REGEX_DOOthers = new List<Regex> {
                              new Regex(@"^保护跳闸出口$"),
+                             new Regex(@"^保护合闸出口$"),
                              new Regex(@"^遥控公共$"),
                              new Regex(@"控制回路断线$"),
                     };
@@ -131,9 +129,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                     {
                         Create_DO_By_Des(doDeviceEnds, rootItem);
                         return;
-                    }                      
+                    }
                 }
-             
+
                 if (dODeviceEnd.GetYBName() != string.Empty)
                 {
                     if (dODeviceEnd.GetOtherHighVoltage_QDName() != string.Empty)
@@ -159,11 +157,23 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             foreach (var dODeviceEnd in DOObject)
             {
                 var dOObjectPair = new DOPortPair(DOObject.FirstOrDefault(), DOObject.LastOrDefault()!);
-                if (ShouldCreateSelfTest(dODeviceEnd))
+                if (REGEX_6U.Any(R => R.IsMatch(_targetDeviceKeeper.TargetDevice.Model)))
                 {
-                    CreateSelfTest(dOObjectPair, rootItem);
-                    break;
+                    if (ShouldCreateSelfTest_6U(dODeviceEnd))
+                    {
+                        CreateSelfTest(dOObjectPair, rootItem);
+                        break;
+                    }
                 }
+                else
+                {
+                    if (ShouldCreateSelfTest(dODeviceEnd))
+                    {
+                        CreateSelfTest(dOObjectPair, rootItem);
+                        break;
+                    }
+                }
+
                 if (dODeviceEnd.StartPort.Item3.Desc.Contains("告警"))
                 {
                     CreateAlarm(dOObjectPair, rootItem);
@@ -590,13 +600,14 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         {
             var sdl = _sDLKeeper.SDL;
             var double_YB = REGEX_DOUBLE_YB_PORT1_to_PORT2.Concat(REGEX_DOUBLE_YB_PORT1_to_PORT3).ToList();
-            var double_ybs=_sDLKeeper.SDL.Cubicle.Devices.Where(D => double_YB.Any(R=>R.IsMatch(D.Desc)));
-            foreach(var double_yb in double_ybs)
+            var double_ybs = _sDLKeeper.SDL.Cubicle.Devices.Where(D => double_YB.Any(R => R.IsMatch(D.Desc)));
+            foreach (var double_yb in double_ybs)
             {
-                Tuple<string, string, string> tuple1=new Tuple<string, string, string>("","","");
+                Tuple<string, string, string> tuple1 = new Tuple<string, string, string>("", "", "");
                 Tuple<string, string, string> tuple2 = new Tuple<string, string, string>("", "", "");
-              
-                if (REGEX_DOUBLE_YB_PORT1_to_PORT3.Any(R => R.IsMatch(double_yb.Desc))){
+
+                if (REGEX_DOUBLE_YB_PORT1_to_PORT3.Any(R => R.IsMatch(double_yb.Desc)))
+                {
                     tuple1 = FindNearestPort(sdl, double_yb.Name, "", "4", new List<Core>());
                     tuple2 = FindNearestPort(sdl, double_yb.Name, "", "2", new List<Core>());
                 }
@@ -605,7 +616,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                     tuple1 = FindNearestPort(sdl, double_yb.Name, "", "3", new List<Core>());
                     tuple2 = FindNearestPort(sdl, double_yb.Name, "", "4", new List<Core>());
                 }
-                
+
                 var item = rootItem.GetItems().FirstOrDefault(p => p.Name == @"双层压板测试").Clone();
                 if (item != null)
                 {
@@ -640,7 +651,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             var AuxiliaryContact = sdl.Cubicle.Devices.Where(D => REGEX_Air_Switch_Auxiliary_Contact.Any(R => R.IsMatch(D.Desc)));
             foreach (var KKdevice in AuxiliaryContact)
             {
-                var tuple1 = FindNearestPort(sdl, KKdevice.Name, "", "11",new List<Core>());
+                var tuple1 = FindNearestPort(sdl, KKdevice.Name, "", "11", new List<Core>());
                 var tuple2 = FindNearestPort(sdl, KKdevice.Name, "", "12", new List<Core>());
                 var item = rootItem.GetItems().FirstOrDefault(I => I.Name == @"空开辅助接点测试").Clone();
                 item.OrderNum = 3;
@@ -669,15 +680,15 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             //TODO 轨道继电器
             var sdl = _sDLKeeper.SDL;
             var Track_Relay = sdl.Cubicle.Devices.Where(D => REGEX_Track_Relay.Any(R => R.IsMatch(D.Desc)));
-            
+
             // 获取 targetDevice 的前缀数字
             var targetDevicePrefix = GetDevicePrefix(_targetDeviceKeeper.TargetDevice.Name);
-            
+
             foreach (var relay in Track_Relay)
             {
                 // 如果 relay 的 device 名称是 "数字-" 开头，需要检查前缀是否与 targetDevice 匹配
                 var relayPrefix = GetDevicePrefix(relay.Name);
-                
+
                 // 匹配逻辑：
                 // 1. targetDevice 有前缀 (如 "1-1n")，relay 也必须有相同前缀 (如 "1-1ZJ")
                 // 2. targetDevice 无前缀 (如 "1n")，relay 也必须无前缀 (如 "1ZJ", "2ZJ")
@@ -697,7 +708,12 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                         continue; // relay 有前缀，跳过
                     }
                 }
-                
+                //轨道继电器可能连接开入，开入不创建轨道继电器测试项
+                var cores = sdl.Cubicle.Cores.Where(C => DEVICE_REGEX.IsMatch(C.DeviceA) && C.DeviceB.Contains(relay.Name));
+                if (cores.Any(C => C.StartDesc.Contains("开入") || C.EndDesc.Contains("开入")))
+                {
+                    continue;
+                }
                 var item = rootItem.GetItems().FirstOrDefault(p => p.Name == @"调试人员自测").Clone();
                 item.OrderNum = 4;
                 if (item != null)
@@ -715,8 +731,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                     _nodename.Add(item.Name);
                 }
             }
-         }
-         
+        }
+
         /// <summary>
         /// 提取设备名称中的前缀数字（如 "4-1ZJ" 提取出 4，"1-1ZJ" 提取出 1，"1ZJ" 返回 null）
         /// </summary>
@@ -726,7 +742,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         {
             if (string.IsNullOrEmpty(deviceName))
                 return null;
-                
+
             // 匹配格式：可选的 "数字-" 开头
             var match = Regex.Match(deviceName, @"^(\d+)-");
             if (match.Success && int.TryParse(match.Groups[1].Value, out int prefix))
@@ -755,7 +771,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             var cores = sdl.Cubicle.Cores.ToList();
             //检查下一个是不是短连片
             var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == AnotherDevice);
-            if (device!=null&&device.Class.Equals("YB"))
+            if (device != null && device.Class.Equals("YB"))
             {
                 var double_YB = REGEX_DOUBLE_YB_PORT1_to_PORT2.Concat(REGEX_DOUBLE_YB_PORT1_to_PORT3).ToList();
 
@@ -774,11 +790,11 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                         {
                             AnotherPort = (portANumber - 1).ToString();
                         }
-                        else if(portANumber==1)
+                        else if (portANumber == 1)
                         {
                             AnotherPort = (portANumber + 1).ToString();
                         }
-                   
+
                     }
                 }
 
@@ -870,9 +886,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                     }
                 });
             }
-        }     
+        }
         private Dictionary<string, List<DODeviceEnd>> RemoveNoConnection(Dictionary<string, List<DODeviceEnd>> dict)
-        {           
+        {
             foreach (var currentKvp in dict)
             {
                 foreach (var deviceEnd in currentKvp.Value)
@@ -885,12 +901,12 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                                new List<Core>(),
                                lines);
                     var cores = GetTargetLine(lines);
-                    if(cores!=null)
+                    if (cores != null)
                     {
                         deviceEnd.cores = cores.Where(C => !C.DeviceA.Contains("FLQYD") && !C.DeviceB.Contains("FLQYD")).ToList();
                     }
-                    
-                    
+
+
                 }
             }
             // 筛选出符合条件的键值对：值列表中cores有效（不为null且数量>0）的元素刚好有2个
@@ -905,16 +921,16 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         {
             foreach (var line in lines)
             {
-           
-                if(line.Any(C=>REGEX_4QD.IsMatch(C.DeviceA)|| REGEX_4QD.IsMatch(C.DeviceB)|| REGEX_4YD.IsMatch(C.DeviceA) || REGEX_4YD.IsMatch(C.DeviceB)) )
+
+                if (line.Any(C => REGEX_4QD.IsMatch(C.DeviceA) || REGEX_4QD.IsMatch(C.DeviceB) || REGEX_4YD.IsMatch(C.DeviceA) || REGEX_4YD.IsMatch(C.DeviceB)))
                 {
-                   
+
                     return line;
                 }
 
             }
             foreach (var line in lines)
-            {               
+            {
                 foreach (var core in line)
                 {
                     var deviceA = _sDLKeeper.SDL.Cubicle.Devices.FirstOrDefault(d => d.Name == core.DeviceA);
@@ -923,15 +939,15 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                     {
                         if (deviceA.Class.Equals("YB") || deviceB.Class.Equals("YB"))
                         {
-                            if(LastDeviceIsTD(_sDLKeeper.SDL, line))
+                            if (LastDeviceIsTD(_sDLKeeper.SDL, line))
                             {
                                 return line;
                             }
                             else
                             {
-                                return line.GetRange(0, line.Count-1);
+                                return line.GetRange(0, line.Count - 1);
                             }
-                            
+
                         }
                     }
                 }
@@ -942,21 +958,21 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
             }
             return null;
         }
-        private Tuple<string, string, string> FindNearestPort(SDL sdl, string device, string board, string port,List<Core> fliter)
+        private Tuple<string, string, string> FindNearestPort(SDL sdl, string device, string board, string port, List<Core> fliter)
         {
             var cores = sdl.Cubicle.Cores.Except(fliter).Where(C =>
                (C.DeviceA == device && C.BoardA == board && C.PortA == port) ||
                (C.DeviceB == device && C.BoardB == board && C.PortB == port)
                );
-            foreach(var core in cores)
+            foreach (var core in cores)
             {
                 fliter.Add(core);
                 var otherDeviceName = core.DeviceA == device ? core.DeviceB : core.DeviceA;
                 var otherBoardName = core.BoardA == board ? core.BoardB : core.BoardA;
                 var otherPortName = core.PortA == port ? core.PortB : core.PortA;
                 var otherDevice = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == otherDeviceName);
-                Tuple<string, string, string>res = null;
-                if ( otherDevice != null && otherDevice.Class != "TD")
+                Tuple<string, string, string> res = null;
+                if (otherDevice != null && otherDevice.Class != "TD")
                 {
                     res = FindNearestPort(sdl, otherDeviceName, otherBoardName, otherPortName, fliter);
                 }
@@ -964,28 +980,28 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
                 {
                     res = new Tuple<string, string, string>(otherDeviceName, otherBoardName, otherPortName);
                 }
-                if(res!=null && res.Item1 != "" && res.Item2 != "" && res.Item3 != "")
+                if (res != null && res.Item1 != "" && res.Item2 != "" && res.Item3 != "")
                 {
                     return res;
-                }                                           
-            }        
+                }
+            }
             return new Tuple<string, string, string>("", "", "");
         }
-        private bool LastDeviceIsTD(SDL sdl,List<Core>cores)
+        private bool LastDeviceIsTD(SDL sdl, List<Core> cores)
         {
             if (cores.Count == 1)
             {
                 return true;
             }
-            if(cores.Count>1)
+            if (cores.Count > 1)
             {
                 var lastCore = cores.LastOrDefault()!;
-                var SecondlastCore = cores[cores.Count-2];
-               
-                if (lastCore.DeviceA== SecondlastCore.DeviceA)
+                var SecondlastCore = cores[cores.Count - 2];
+
+                if (lastCore.DeviceA == SecondlastCore.DeviceA)
                 {
                     var device = sdl.Cubicle.Devices.FirstOrDefault(d => d.Name == lastCore.DeviceB);
-                    if(device != null && device.Class.Equals("TD"))
+                    if (device != null && device.Class.Equals("TD"))
                     {
                         return true;
                     }
@@ -1019,14 +1035,43 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDO
         }
         private bool ShouldCreateSelfTest(DODeviceEnd dODeviceEnd)
         {
+            var matchKeywords = new List<string>
+            {
+                "手合同期",
+                "断路器",
+                "保护跳闸出口",
+                "遥控公共",
+            };
+
+            // 获取端口描述
             var source = GetBoard_Port_PortDesc(dODeviceEnd);
-            var PortReallDesc = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
-            return PortReallDesc.Contains("手合同期") 
-                || PortReallDesc.Contains("断路器")
-                || PortReallDesc.Contains("保护跳闸出口") || PortReallDesc.Contains("遥控公共") || PortReallDesc.Contains("控制回路断线") //6U特殊处理
-                || dODeviceEnd.StartPort.Item3.Desc.Contains("手合同期")
-                || dODeviceEnd.StartPort.Item3.Desc.Contains("断路器")
-                || dODeviceEnd.StartPort.Item3.Desc.Contains("保护跳闸出口")  || dODeviceEnd.StartPort.Item3.Desc.Contains("遥控公共") || dODeviceEnd.StartPort.Item3.Desc.Contains("控制回路断线");
+            var portRealDesc = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+            var startPortDesc = dODeviceEnd.StartPort.Item3.Desc;
+
+            // 任意一个关键词匹配就返回 true
+            return matchKeywords.Any(key => portRealDesc.Contains(key))
+                || matchKeywords.Any(key => startPortDesc.Contains(key));
+        }
+        private bool ShouldCreateSelfTest_6U(DODeviceEnd dODeviceEnd)
+        {
+            var matchKeywords = new List<string>
+            {
+                "保护跳闸出口",
+                "保护合闸出口",
+                "保护跳闸入口",
+                "遥控公共",
+                "断路器遥控分闸",
+                "断路器遥控合闸",
+            };
+
+            // 获取端口描述
+            var source = GetBoard_Port_PortDesc(dODeviceEnd);
+            var portRealDesc = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
+            var startPortDesc = dODeviceEnd.StartPort.Item3.Desc;
+
+            // 任意一个关键词匹配就返回 true
+            return matchKeywords.Any(key => portRealDesc.Contains(key))
+                || matchKeywords.Any(key => startPortDesc.Contains(key));
         }
     }
 }

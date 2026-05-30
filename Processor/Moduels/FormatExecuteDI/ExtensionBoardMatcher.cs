@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
+﻿namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
 {
     internal class ExtensionBoardMatcher
     {
@@ -13,7 +7,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             "边",
             "中"
         };
-        public static readonly Dictionary<ValueTuple<string,string>, string> ExtensionPortDesc = new Dictionary<ValueTuple<string, string>, string>
+        public static readonly Dictionary<ValueTuple<string, string>, string> ExtensionPortDesc = new Dictionary<ValueTuple<string, string>, string>
     {
         // 可以在这里初始化字典内容
         {(SwitchPosition[0],"分相跳闸位置TWJa"), "接点输入4"},

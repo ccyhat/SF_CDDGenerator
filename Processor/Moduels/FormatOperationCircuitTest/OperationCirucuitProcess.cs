@@ -2,7 +2,6 @@
 using SFTemplateGenerator.Helper.Shares.SDL;
 using SFTemplateGenerator.Processor.Interfaces;
 using SFTemplateGenerator.Processor.Interfaces.FormatOperationCircuitTest;
-using SFTemplateGenerator.Processor.Moduels.FormatVoltageSwitchCircuitTest;
 using System.Text.RegularExpressions;
 using static SFTemplateGenerator.Helper.Constants.CDDRegex;
 using static SFTemplateGenerator.Helper.UtilityTools.RegexProcess;
@@ -107,7 +106,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatOperationCircuitTest
         private Dictionary<string, List<OperationDODeviceEnd>> OperationDOObject = new Dictionary<string, List<OperationDODeviceEnd>>();
         public Task OperationCirucuitProcessAsync(SDL sdl, Items root, List<string> NodeName)
         {
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => OPBORAD_REGEX.Any(R => R.IsMatch(B.Desc)) || DOBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).ToList();
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => OPBORAD_REGEX.Any(R => R.IsMatch(B.Desc)) || DOBORAD_REGEX.Any(R => R.IsMatch(B.Desc))).ToList();
             Dictionary<string, List<OperationDODeviceEnd>> TripDOObject = new Dictionary<string, List<OperationDODeviceEnd>>();
             var regexMappings = new Dictionary<Regex, Dictionary<string, List<OperationDODeviceEnd>>>
             {
@@ -115,7 +114,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatOperationCircuitTest
             };
             foreach (var board in boards)
             {
-                var ports = board.Ports.Where(p => p.PortPair.Any(pair => pair.Contains("tripDO")));
+                // 只匹配 tripDO 类型端口
+                var ports = board.Ports.Where(p => p.PortPair.Any(pair => pair.StartsWith("tripDO_")));
                 foreach (var port in ports)
                 {
                     Match match = null;
@@ -195,7 +195,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatOperationCircuitTest
             ).ToDictionary();
             return newDict;
         }
-        
+
         private void GetFarCore(SDL sdl, Device target, Board board, Helper.Shares.SDL.Port port, List<Core> fliter, List<Core> Core_list)
         {
             GetFarCore(sdl, target.Name, board.Name, port.Name, fliter, Core_list);
@@ -331,7 +331,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatOperationCircuitTest
         }
         private Tuple<string, string> FindTripDIPort(List<Regex> DIRegex)
         {
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => OPBORAD_REGEX.Any(R => R.IsMatch(B.Desc)) || DOBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).ToList();
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => OPBORAD_REGEX.Any(R => R.IsMatch(B.Desc)) || DOBORAD_REGEX.Any(R => R.IsMatch(B.Desc))).ToList();
             foreach (var board in boards)
             {
                 var port = board.Ports.FirstOrDefault(P => DIRegex.Any(R => R.IsMatch(P.Desc)));

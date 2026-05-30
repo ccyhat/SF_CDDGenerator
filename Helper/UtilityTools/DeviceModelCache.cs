@@ -42,22 +42,26 @@ namespace SFTemplateGenerator.Helper.UtilityTools
                 return desc;
             }
         }
-        public bool IsMatch(string boardName, string portName)
+        public string GetDecs(string boardName, string portName,string Id)
         {
             var key = boardName + "-" + portName + "-";
             if (_dicdevicesId.Keys.Any(K => K.StartsWith(key)))
             {
-                var realKey = _dicdevicesId.Keys.Where(K => K.StartsWith(key)).FirstOrDefault();
-                if (!string.IsNullOrWhiteSpace(realKey))
+                var realKeys = _dicdevicesId.Keys.Where(K => K.StartsWith(key));
+                if (realKeys.Any())
                 {
-                    return true;
+                    foreach(var realkey in realKeys.ToList())
+                    {
+                        if (_dicdevicesId[realkey].Equals(Id))
+                        {
+                            return realkey.Replace(key,string.Empty);
+                        }
+                    }
+                    
                 }
-                else
-                {
-                    return false;
-                }
+              
             }
-            return false;
+            return string.Empty;
         }
         public string GetDataSetId(string boardName, string portName, string desc)
         {

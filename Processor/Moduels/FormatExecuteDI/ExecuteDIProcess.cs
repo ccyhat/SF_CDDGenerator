@@ -1,12 +1,9 @@
-﻿using Castle.Components.DictionaryAdapter.Xml;
-using SFTemplateGenerator.Helper.Shares.GuideBook;
+﻿using SFTemplateGenerator.Helper.Shares.GuideBook;
 using SFTemplateGenerator.Helper.Shares.SDL;
 using SFTemplateGenerator.Processor.Interfaces;
 using SFTemplateGenerator.Processor.Interfaces.FormatExecuteDI;
-using System.Collections.Generic;
 using System.Data;
 using System.Text.RegularExpressions;
-using System.Windows.Input;
 using static SFTemplateGenerator.Helper.Constants.CDDRegex;
 using static SFTemplateGenerator.Helper.UtilityTools.RegexProcess;
 
@@ -46,7 +43,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             new Regex(@"^装置电源\+$"),
             new Regex(@"^IN\+$"),
             new Regex(@"^装置电源正$"),
-            
+
         };
         private static readonly List<Regex> REGEX_DI_COMM = new(){
             new Regex(@"^KM\+$"),
@@ -60,7 +57,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             new Regex(@"^保护检修$"),
             new Regex(@"^检修\+$"),
             new Regex(@"^检修状态$"),
-            new Regex(@"^检修状态硬压板$"),          
+            new Regex(@"^检修状态硬压板$"),
         };
         private static readonly List<Regex> REGEX_IBusbar = new(){
             new Regex(@"^投I母电压$"),
@@ -347,7 +344,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             var KKTOTAL = new List<Regex>().Concat(REGEX_FG).Concat(REGEX_BS).Concat(REGEX_YB).Concat(REGEX_JDQ).ToList();
             foreach (var dIObject in DIObjectList)
             {
-               
+
                 var devices = dIObject.GetDevices(_sDLKeeper.SDL);
                 var FirstKKdevice = devices.FirstOrDefault(D => KKTOTAL.Any(R => R.IsMatch(D.Class)));
                 //有两个BS的
@@ -386,7 +383,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
                     {
                         CreateJDQ(rootItem, dIObject);
                     }
-                  
+
                 }
                 //从其他端子排引入
                 else if (HasMatchingGDSelfTestTdDevice(devices) && IsNotPublicBoard(dIObject, publicBoardList))
@@ -582,8 +579,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
             {
                 var PowerNode = FindPowerNode();
                 var source = GetBoard_Port_PortDesc(DIObject);
-                var NameJDQ=DIObject.GetKKName(_sDLKeeper.SDL,"JDQ");
-                var tuple=FindNearestPort(_sDLKeeper.SDL, NameJDQ, "", "1", new List<Core>());
+                var NameJDQ = DIObject.GetKKName(_sDLKeeper.SDL, "JDQ");
+                var tuple = FindNearestPort(_sDLKeeper.SDL, NameJDQ, "", "1", new List<Core>());
                 var PortReallDesc = _deviceModelKeeper.deviceModelCache[source.Item1, source.Item2, source.Item3];
                 var indataSet = _deviceModelKeeper.deviceModelCache.GetDataSetId(source.Item1, source.Item2, PortReallDesc);
                 var safety = item.ItemList.FirstOrDefault(p => p.Name == "提示接入开入信号") as Safety;
@@ -601,9 +598,9 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
                     CommCMD.Type = "ReadSoe";
                     if (indataSet != "")
                     {
-                        CommCMD.DsvScript.InDataSet = "Device1$" + indataSet;                       
+                        CommCMD.DsvScript.InDataSet = "Device1$" + indataSet;
                         CommCMD.DsvScript.Type = "query";
-                        
+
                     }
                     var element = CommCMD.DsvScript.Elements.FirstOrDefault();
                     if (element != null)
@@ -935,7 +932,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
                         AnotherPort = (portANumber - 7).ToString();
                     }
                 }
-             
+
                 if (device.Class.Equals("FG"))
                 {
                     if (int.TryParse(AnotherPort, out int portANumber))
@@ -1007,7 +1004,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatExecuteDI
                 if (board != null)
                 {
                     return new Tuple<string, string>(device.Name, board.Name);
-                }              
+                }
             }
             return new Tuple<string, string>("", "");
         }

@@ -5,7 +5,6 @@ using SFTemplateGenerator.Processor.Interfaces.FormatAnalogQuantityInspection;
 using System.Text;
 using static SFTemplateGenerator.Helper.CodingStr.CodingStr;
 using static SFTemplateGenerator.Helper.Paths.PathSaver;
-using static SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection.FormatAnalogQuantityInspection;
 
 namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 {

@@ -8,20 +8,29 @@ namespace SFTemplateGenerator.Helper.Shares.DIO
         [XmlElement("Port")]
         public List<DIOPort> Ports = new List<DIOPort>();
 
-        // 生成带类型前缀的集合标识（DO_1, DI_1等）
+        // 生成带类型前缀的集合标识（DO_1, DI_1, tripDO_1等）
         public void GenerateTypedCollectionIds()
         {
-            // 1. 按类型分组（DO和DI）
-            var doPorts = Ports.Where(p => p.PortType?.Contains("DO", StringComparison.OrdinalIgnoreCase) == true).ToList();//会有tripDO
+            // 1. 精确匹配 DO 类型（排除 tripDO）
+            var doPorts = Ports.Where(p => p.PortType?.Equals("DO", StringComparison.OrdinalIgnoreCase) == true).ToList();
+
+            // 2. 精确匹配 tripDO 类型
+            var tripDoPorts = Ports.Where(p => p.PortType?.Equals("tripDO", StringComparison.OrdinalIgnoreCase) == true).ToList();
+
+            // 3. 精确匹配 DI 类型
             var diPorts = Ports.Where(p => p.PortType?.Equals("DI", StringComparison.OrdinalIgnoreCase) == true).ToList();
 
-            // 2. 为DO类型生成集合标识
+            // 4. 为 DO 类型生成集合标识
             var doCollections = IdentifyCollections(doPorts);
-            AssignCollectionIds(doCollections);
+            AssignCollectionIds(doCollections, "DO");
 
-            // 3. 为DI类型生成集合标识
+            // 5. 为 tripDO 类型生成集合标识
+            var tripDoCollections = IdentifyCollections(tripDoPorts);
+            AssignCollectionIds(tripDoCollections, "tripDO");
+
+            // 6. 为 DI 类型生成集合标识
             var diCollections = IdentifyCollections(diPorts);
-            AssignCollectionIds(diCollections);
+            AssignCollectionIds(diCollections, "DI");
         }
         // 识别同一类型内的关联集合（基于port与match的引用关系）
         //<Port board = "14" port="a2" type="DO" match="a4,a6"/>
@@ -85,15 +94,15 @@ namespace SFTemplateGenerator.Helper.Shares.DIO
         }
 
 
-        // 为集合分配带类型前缀的标识（如DO_1, DI_2）
-        private void AssignCollectionIds(List<List<DIOPort>> collections)
+        // 为集合分配带类型前缀的标识（如DO_1, DI_2, tripDO_1）
+        private void AssignCollectionIds(List<List<DIOPort>> collections, string typePrefix)
         {
             for (int i = 0; i < collections.Count; i++)
             {
                 var count = 0;
                 foreach (var port in collections[i])
                 {
-                    port.CollectionId.Add($"{port.PortType}_{i + 1}_{count}");
+                    port.CollectionId.Add($"{typePrefix}_{i + 1}_{count}");
                     count++;
                 }
             }

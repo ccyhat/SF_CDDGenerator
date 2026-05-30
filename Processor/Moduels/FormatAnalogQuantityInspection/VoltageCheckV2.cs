@@ -3,12 +3,10 @@ using SFTemplateGenerator.Helper.Shares.GuideBook;
 using SFTemplateGenerator.Helper.Shares.SDL;
 using SFTemplateGenerator.Processor.Interfaces;
 using SFTemplateGenerator.Processor.Interfaces.FormatAnalogQuantityInspection;
-using System.DirectoryServices.ActiveDirectory;
 using System.Text;
 using System.Text.RegularExpressions;
 using static SFTemplateGenerator.Helper.Constants.CDDRegex;
 using static SFTemplateGenerator.Helper.Paths.PathSaver;
-using static SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection.FormatAnalogQuantityInspection;
 
 namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
 {
@@ -109,13 +107,13 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
         {
 
             //获取交流插件
-            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => ACBORAD_REGEX.Any(R=>R.IsMatch(B.Desc))).OrderBy(B => B.Desc).ToList();        
+            var boards = _targetDeviceKeeper.TargetDevice.Boards.Where(B => ACBORAD_REGEX.Any(R => R.IsMatch(B.Desc))).OrderBy(B => B.Desc).ToList();
             Dictionary<string, ACDeviceUint> dictionary = new Dictionary<string, ACDeviceUint>();
             var dic_flag = GetDescListResult(boards);
             //循环添加
             for (int i = 0; i < boards.Count(); i++)
             {
-                var items = GetInfo(sdl, _targetDeviceKeeper.TargetDevice, boards[i],dic_flag);
+                var items = GetInfo(sdl, _targetDeviceKeeper.TargetDevice, boards[i], dic_flag);
                 foreach (var item in items)
                 {
                     if (dictionary.ContainsKey(item.Key))
@@ -207,7 +205,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     string tailStr = match.Groups[3].Value;
                     string tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;
                     string tailStr1 = match.Groups[1].Value + match.Groups[2].Value;
-                  
+
                     if (flag.ContainsKey(tailNumber))
                     {
                         if (flag[tailNumber])
@@ -215,14 +213,14 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             tailStr = match.Groups[3].Value;
                             tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : (int.Parse(tailStr) + 1).ToString(); ;
                             tailStr1 = match.Groups[2].Value;
-                            
+
                         }
                         else
                         {
                             tailStr = match.Groups[3].Value;
                             tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
                             tailStr1 = match.Groups[2].Value;
-                          
+
                         }
                     }
                     else
@@ -230,7 +228,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                         tailStr = match.Groups[3].Value;
                         tailNumber = string.IsNullOrEmpty(tailStr) ? "1" : tailStr;
                         tailStr1 = match.Groups[2].Value;
-                      
+
                     }
                     // 检查字典中是否已存在该尾号的键
                     if (!groupedByTail.ContainsKey(tailNumber))
@@ -273,15 +271,18 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     {
                         u_n_ports.Add(p);
                     }
-                    else if (REGEX_Uabc_hat.Any(R => R.IsMatch(p.Desc))) {
+                    else if (REGEX_Uabc_hat.Any(R => R.IsMatch(p.Desc)))
+                    {
                         u_n_ports.Add(p);
-                    } 
-                    else if (REGEX_Ux.Any(R => R.IsMatch(p.Desc))) {
+                    }
+                    else if (REGEX_Ux.Any(R => R.IsMatch(p.Desc)))
+                    {
                         u_x_ports.Add(p);
-                    } 
-                    else if (REGEX_Iabc.Any(R => R.IsMatch(p.Desc))) {
+                    }
+                    else if (REGEX_Iabc.Any(R => R.IsMatch(p.Desc)))
+                    {
                         i_ports.Add(p);
-                    } 
+                    }
                     else if (REGEX_In.Any(R => R.IsMatch(p.Desc)))
                     {
                         i_n_ports.Add(p);
@@ -290,7 +291,8 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     {
                         i_n_ports.Add(p);
                     }
-                    else if (REGEX_I0.Any(R => R.IsMatch(p.Desc))) {
+                    else if (REGEX_I0.Any(R => R.IsMatch(p.Desc)))
+                    {
                         i_0_ports.Add(p);
                     }
                     else if (REGEX_IJ.Any(R => R.IsMatch(p.Desc)))
@@ -315,7 +317,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     }
                     else if (REGEX_Ic_hat.Any(R => R.IsMatch(p.Desc)))
                     {
-                        i_cn_ports.Add (p);
+                        i_cn_ports.Add(p);
                     }
                 }
                 void AddCores(IEnumerable<Port> portList, List<List<Core>> infoList, List<string> KK_BYQ)
@@ -354,7 +356,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 //如果I保护和I测量同时存在，Uabc就要被拆分为一组
                 if (i_ports.Any() && i_c_ports.Any())
                 {
-                   
+
                     var info_measure = new ACDeviceUint();
                     AddCores(u_ports, info_measure.Group1, info_measure.KK_BYQ_List1);
                     AddCores(u_n_ports, info_measure.Group1, info_measure.KK_BYQ_List1);
@@ -365,7 +367,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     {
                         continue;
                     }
-                    dictionary.Add(group.Key+"测量", info_measure);
+                    dictionary.Add(group.Key + "测量", info_measure);
                 }
                 //如果U不平衡存在，也要单独分一组
                 if (u_bph_ports.Any())
@@ -381,7 +383,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                     }
                     dictionary.Add(group.Key + "不平衡", info_unbalance);
                 }
-                
+
             }
             return dictionary;
         }
@@ -702,7 +704,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                 if (GetBYQName(currentLine).Count() > 1)
                 {
                     return true;
-                }                
+                }
             }
             return false;
         }
@@ -781,7 +783,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatAnalogQuantityInspection
                             string tailNumber = string.IsNullOrEmpty(tailStr) ? "0" : tailStr;
 
                             string tailStr1 = match.Groups[1].Value + match.Groups[2].Value + tailNumber;
-                           
+
                             {
                                 tailNumber = match.Groups[1].Value + tailNumber;
                             }

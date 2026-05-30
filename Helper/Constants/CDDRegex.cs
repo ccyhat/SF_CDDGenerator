@@ -4,7 +4,7 @@ namespace SFTemplateGenerator.Helper.Constants
 {
     public static partial class CDDRegex
     {
-        public static readonly List<Regex> ACBORAD_REGEX = new() { 
+        public static readonly List<Regex> ACBORAD_REGEX = new() {
             new Regex(@"交流(板|插件)\d?"),
             new Regex(@"AC\d?"),
         };
@@ -21,7 +21,7 @@ namespace SFTemplateGenerator.Helper.Constants
             new Regex(@"电源(板|插件)\d?"),
             new Regex(@"PW\d?"),
         };
-        public static readonly List<Regex> OPBORAD_REGEX = new() { 
+        public static readonly List<Regex> OPBORAD_REGEX = new() {
             new Regex(@"操作(板|插件)\d?") ,
              new Regex(@"OUT\d?")
         };
@@ -37,10 +37,12 @@ namespace SFTemplateGenerator.Helper.Constants
         public static readonly Regex DEVICE_REGEX = new Regex(@"^(\d-)?(\d{1,2})n$");
         public static readonly Regex CEKONG_DEVICE_REGEX = new Regex(@"200F");
         public static readonly List<Regex> REGEX_6U = new List<Regex> {
+            new Regex(@"^CSD-211.*_D6", RegexOptions.IgnoreCase),
+            new Regex(@"^CSD-213.*_D6", RegexOptions.IgnoreCase),
+            new Regex(@"^CSD-215.*_D6", RegexOptions.IgnoreCase),
             new Regex(@"^CSD-221.*_D6", RegexOptions.IgnoreCase),
             new Regex(@"^CSD-241.*_D6", RegexOptions.IgnoreCase),
             new Regex(@"^CSD-246.*_D6", RegexOptions.IgnoreCase),
-
         };
     }
 }

@@ -32,7 +32,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatOperationCircuitTest
             else
             {
                 var root = guideBook.Device.Items.Where(I => I.Name.Equals("操作回路测试")).FirstOrDefault();
-                
+
                 // 根据型号动态解析命名注册的 IOperationCirucuitProcess 实现
                 IOperationCirucuitProcess? resolvedProcessor = null;
 
@@ -62,7 +62,7 @@ namespace SFTemplateGenerator.Processor.Moduels.FormatOperationCircuitTest
                 {
                     Logger.Warning("未解析到 IOperationCirucuitProcess 实现，跳过操作回路测试。");
                 }
-                
+
                 //去掉多余节点
                 root.ItemList.RemoveAll(I => !_nodename.Contains(I.Name));
             }
